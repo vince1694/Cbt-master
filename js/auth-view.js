@@ -668,8 +668,10 @@ export const AuthView = {
     };
   },
 
+  _showForgotPasswordModal() {
     // Remove any existing modal
-    document.getElementById('forgot-pw-modal')?.remove();
+    const existingModal = document.getElementById('forgot-pw-modal');
+    if (existingModal) existingModal.remove();
 
     const modal = document.createElement('div');
     modal.id = 'forgot-pw-modal';
