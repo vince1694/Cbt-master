@@ -55,20 +55,23 @@
   <!-- Global error handler: catches module load failures before app.js runs -->
   <script>
     function _showLoadErr(msg) {
-      const el = document.getElementById('app-loading');
-      if (el) el.innerHTML = `
-        <div style="max-width:420px;text-align:center;padding:2rem;">
-          <div style="font-size:2.5rem;margin-bottom:1rem;">⚠️</div>
-          <p style="color:#f87171;font-weight:700;font-size:1rem;margin-bottom:.5rem;">Failed to start</p>
-          <p style="color:#94a3b8;font-size:.8rem;word-break:break-all;margin-bottom:1.5rem;font-family:monospace;">${msg}</p>
-          <button onclick="location.reload()" style="background:#10b981;color:#fff;border:none;padding:.6rem 1.5rem;border-radius:8px;cursor:pointer;">Reload</button>
-        </div>`;
+      var el = document.getElementById('app-loading');
+      if (el) el.innerHTML =
+        '<div style="max-width:420px;text-align:center;padding:2rem;">' +
+        '<div style="font-size:2.5rem;margin-bottom:1rem;">\u26a0\ufe0f</div>' +
+        '<p style="color:#f87171;font-weight:700;font-size:1rem;margin-bottom:.5rem;">Failed to start</p>' +
+        '<p style="color:#94a3b8;font-size:.8rem;word-break:break-all;margin-bottom:1.5rem;font-family:monospace;">' + msg + '</p>' +
+        '<button onclick="location.reload()" style="background:#10b981;color:#fff;border:none;padding:.6rem 1.5rem;border-radius:8px;cursor:pointer;">Reload</button>' +
+        '</div>';
     }
-    window.addEventListener('error', (e) => {
-      _showLoadErr((e.filename ? e.filename.split('/').pop() + ':' + e.lineno + ' — ' : '') + e.message);
+    window.addEventListener('error', function(e) {
+      var file = e.filename ? e.filename.split('/').pop() + ':' + e.lineno + ' \u2014 ' : '';
+      _showLoadErr(file + e.message);
     });
-    window.addEventListener('unhandledrejection', (e) => {
-      _showLoadErr('Unhandled Promise: ' + (e.reason?.message || e.reason || 'unknown'));
+    window.addEventListener('unhandledrejection', function(e) {
+      var reason = e.reason;
+      var msg = (reason && reason.message) ? reason.message : (reason ? String(reason) : 'unknown');
+      _showLoadErr('Promise error: ' + msg);
     });
   </script>
 
