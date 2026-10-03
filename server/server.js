@@ -174,7 +174,15 @@ app.post('/api/auth/register', async (req, res) => {
     });
   } catch (err) {
     console.error('Registration error:', err);
-    res.status(500).json({ error: 'Server error during registration.' });
+    let detail = 'Server error during registration.';
+    if (!process.env.MONGODB_URI) {
+      detail = 'Database is not configured. Please add MONGODB_URI to Vercel Environment Variables.';
+    } else if (!process.env.BREVO_API_KEY) {
+      detail = 'Email service is not configured. Please add BREVO_API_KEY to Vercel Environment Variables.';
+    } else if (err.message) {
+      detail = err.message;
+    }
+    res.status(500).json({ error: detail });
   }
 });
 
