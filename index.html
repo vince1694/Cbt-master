@@ -82,7 +82,8 @@
           '<div style="font-size:2.5rem;margin-bottom:1rem;">\u26a0\ufe0f</div>' +
           '<p style="color:#f87171;font-weight:700;font-size:1rem;margin-bottom:.5rem;">Failed to start</p>' +
           '<p style="color:#94a3b8;font-size:.8rem;word-break:break-all;margin-bottom:1.5rem;font-family:monospace;">' + msg + '</p>' +
-          '<button onclick="location.reload()" style="background:#10b981;color:#fff;border:none;padding:.6rem 1.5rem;border-radius:8px;cursor:pointer;">Reload</button>' +
+          '<button onclick="location.reload()" style="background:#10b981;color:#fff;border:none;padding:.6rem 1.5rem;border-radius:8px;cursor:pointer;margin-right:8px;font-weight:600;">Reload</button>' +
+          '<button onclick="if(window.caches){caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k);}))}).then(function(){location.reload(true)});}else{location.reload(true);}" style="background:#334155;color:#94a3b8;border:none;padding:.6rem 1.2rem;border-radius:8px;cursor:pointer;">Clear Cache</button>' +
           '</div>';
       }
       window.addEventListener('error', function(e) {
@@ -107,6 +108,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
         navigator.serviceWorker.register('./sw.js').then(function(reg) {
+          if (reg && reg.update) reg.update();
           console.log('[PWA] ServiceWorker registered:', reg.scope);
         }).catch(function(err) {
           console.log('[PWA] ServiceWorker failed:', err);

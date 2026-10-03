@@ -3,7 +3,7 @@
  * Caches core app shell, CSS, JavaScript, and Past Questions
  * so candidates can practice seamlessly without internet connection.
  */
-const CACHE_NAME = 'cbt-master-v2';
+const CACHE_NAME = 'cbt-master-v3';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
