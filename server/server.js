@@ -203,6 +203,7 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     // Send OTP email
+    console.log(`📨 [OTP] Code generated for ${email}: ${otp}`);
     const emailRes = await sendOtpEmail({ to: email, name, otp });
     if (!emailRes.success) {
       console.error('Failed to send OTP email:', emailRes.error);
@@ -322,6 +323,7 @@ app.post('/api/auth/resend-otp', async (req, res) => {
     }
 
     const otp = generateOtp();
+    console.log(`📨 [OTP-RESEND] New code generated for ${email}: ${otp}`);
     user.otpCode = crypto.createHash('sha256').update(otp).digest('hex');
     user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
     user.otpAttempts = 0;

@@ -489,8 +489,8 @@
 }
 
 .fpw-card {
-  background: #1a1a2e;
-  border: 1px solid rgba(108, 99, 255, 0.25);
+  background: var(--surface-base);
+  border: 1px solid var(--border-medium);
   border-radius: 20px;
   padding: 2rem;
   width: 100%;
@@ -499,15 +499,15 @@
   transform: translateY(20px) scale(0.97);
   opacity: 0;
   transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(108, 99, 255, 0.1);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--border-subtle);
 }
 
 .fpw-close {
   position: absolute;
   top: 1rem;
   right: 1rem;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-subtle);
   border-radius: 50%;
   width: 32px;
   height: 32px;
@@ -515,7 +515,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   transition: all 0.2s;
 }
 
@@ -535,13 +535,13 @@
 .fpw-title {
   font-size: 1.4rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-primary);
   text-align: center;
   margin: 0 0 0.5rem;
 }
 
 .fpw-desc {
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--text-secondary);
   font-size: 0.875rem;
   text-align: center;
   line-height: 1.6;
@@ -569,12 +569,143 @@
 }
 
 .fpw-success p {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
   font-size: 0.9rem;
   line-height: 1.6;
   margin: 0;
 }
 
+/* ==========================================================================
+   OTP VERIFICATION SCREEN
+   ========================================================================== */
 
-/* OTP VERIFICATION SCREEN */
-.otp-boxes-row{display:flex;align-items:center;justify-content:center;gap:8px;margin:28px 0 24px;}.otp-box{width:52px;height:60px;border-radius:14px;border:2px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:#fff;font-size:1.6rem;font-weight:700;text-align:center;font-family:'JetBrains Mono',monospace;outline:none;transition:border-color 0.2s,background 0.2s,transform 0.15s;caret-color:transparent;}.otp-box:focus{border-color:#6c63ff;background:rgba(108,99,255,0.12);transform:scale(1.06);box-shadow:0 0 0 4px rgba(108,99,255,0.15);}.otp-dash{color:rgba(255,255,255,0.25);font-size:1.2rem;margin:0 2px;user-select:none;}@keyframes otp-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}.otp-shake{animation:otp-shake 0.45s ease;border-color:rgba(246,79,89,0.6)!important;background:rgba(246,79,89,0.08)!important;}.otp-success-msg{background:rgba(0,200,150,0.1);border:1px solid rgba(0,200,150,0.3);color:#00c896;border-radius:12px;padding:12px 16px;font-size:0.9rem;font-weight:600;text-align:center;margin-bottom:12px;}.otp-resend-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;}.otp-resend-btn{background:none;border:none;color:#6c63ff;font-size:0.875rem;font-weight:600;cursor:pointer;padding:4px 8px;border-radius:8px;transition:background 0.2s;}.otp-resend-btn:disabled{color:rgba(255,255,255,0.3);cursor:not-allowed;}.otp-resend-btn:not(:disabled):hover{background:rgba(108,99,255,0.12);}@media(max-width:480px){.otp-box{width:42px;height:50px;font-size:1.3rem;}.otp-boxes-row{gap:5px;}}
+.otp-boxes-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 24px 0 20px;
+}
+
+.otp-box {
+  width: 52px;
+  height: 60px;
+  border-radius: 14px;
+  border: 2px solid var(--border-medium);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  font-size: 1.6rem;
+  font-weight: 700;
+  text-align: center;
+  font-family: var(--font-mono);
+  outline: none;
+  transition: border-color 0.2s, background 0.2s, transform 0.15s, box-shadow 0.2s;
+  caret-color: transparent;
+}
+
+.otp-box:focus {
+  border-color: #10b981;
+  background: var(--surface-base);
+  transform: scale(1.05);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.18);
+}
+
+.otp-dash {
+  color: var(--text-tertiary);
+  font-size: 1.2rem;
+  margin: 0 2px;
+  user-select: none;
+}
+
+@keyframes otp-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+.otp-shake {
+  animation: otp-shake 0.45s ease;
+  border-color: rgba(246, 79, 89, 0.6) !important;
+  background: rgba(246, 79, 89, 0.08) !important;
+}
+
+.otp-success-msg {
+  background: rgba(0, 200, 150, 0.1);
+  border: 1px solid rgba(0, 200, 150, 0.3);
+  color: #00c896;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.otp-resend-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.otp-resend-prompt {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.otp-resend-btn {
+  background: none;
+  border: none;
+  color: #10b981;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.otp-resend-btn:disabled {
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.otp-resend-btn:not(:disabled):hover {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.otp-help-tip {
+  background: var(--jamb-surface);
+  border: 1px solid var(--jamb-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  text-align: left;
+  margin: 10px 0 16px;
+}
+
+.otp-help-tip strong {
+  color: var(--text-primary);
+}
+
+@media (max-width: 480px) {
+  .otp-box {
+    width: 42px;
+    height: 50px;
+    font-size: 1.3rem;
+  }
+  .otp-boxes-row {
+    gap: 5px;
+  }
+}

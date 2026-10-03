@@ -28,10 +28,16 @@ function getBrevo() {
 }
 
 function getSender() {
+  const envSender = (process.env.EMAIL_SENDER_ADDRESS || '').trim();
+  // Ensure we NEVER use an unverified/smtp login address such as bc5880001@smtp-brevo.com
+  // 2bethel4u@gmail.com is the verified sender in Brevo.
+  const senderEmail = (!envSender || envSender.includes('smtp-brevo.com') || envSender.includes('@smtp'))
+    ? '2bethel4u@gmail.com'
+    : envSender;
+
   return {
     name: process.env.EMAIL_SENDER_NAME || 'CBT Master',
-    // Must match a verified sender in Brevo account (2bethel4u@gmail.com)
-    email: process.env.EMAIL_SENDER_ADDRESS || '2bethel4u@gmail.com'
+    email: senderEmail
   };
 }
 

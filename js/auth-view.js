@@ -505,14 +505,18 @@ export const AuthView = {
           <div style="font-size:2.5rem;margin-bottom:8px;">&#9993;&#65039;</div>
           <h1 class="auth-form-title">Check Your Email</h1>
           <p class="auth-form-sub">
-            We sent a 6-digit code to<br>
-            <strong style="color:#a78bfa;">${email}</strong>
+            We sent a 6-digit verification code to<br>
+            <strong style="color:var(--jamb-emerald);font-size:1.02rem;">${email}</strong>
           </p>
+        </div>
+        <div class="otp-help-tip">
+          <span style="font-size:1.15rem;line-height:1;">💡</span>
+          <span><strong>Cannot find the email?</strong> Check your <strong>Spam</strong>, <strong>Junk</strong>, or <strong>Promotions</strong> folder. On phones, Gmail often routes automated codes there.</span>
         </div>
         <div id="otp-error-box" class="auth-error-box hidden"></div>
         <div id="otp-success-msg" class="otp-success-msg hidden">&#10003; Email verified! Signing you in&#8230;</div>
         <div class="otp-boxes-row" id="otp-boxes-row">
-          <input class="otp-box" type="text" inputmode="numeric" maxlength="1" data-idx="0" id="otp-box-0">
+          <input class="otp-box" type="text" inputmode="numeric" maxlength="1" data-idx="0" id="otp-box-0" autocomplete="one-time-code">
           <input class="otp-box" type="text" inputmode="numeric" maxlength="1" data-idx="1" id="otp-box-1">
           <input class="otp-box" type="text" inputmode="numeric" maxlength="1" data-idx="2" id="otp-box-2">
           <span class="otp-dash">&#8212;</span>
@@ -529,7 +533,7 @@ export const AuthView = {
           </span>
         </button>
         <div class="otp-resend-row">
-          <span style="color:rgba(255,255,255,0.45);font-size:13px;">Didn't get it?</span>
+          <span class="otp-resend-prompt">Didn't get it?</span>
           <button class="otp-resend-btn" id="otp-resend-btn" disabled>
             Resend code (<span id="otp-countdown">60</span>s)
           </button>

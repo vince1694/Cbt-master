@@ -148,7 +148,7 @@ export const ProfileView = {
                 </div>
                 <button type="submit" class="profile-save-btn" id="pw-change-btn">Update Password</button>
               </form>
-              ` : `<p style="color:rgba(255,255,255,0.4);font-size:0.875rem;">Password changes are only available on cloud accounts. Create a free account to enable this.</p>`}
+              ` : `<p style="color:var(--text-secondary);font-size:0.875rem;">Password changes are only available on cloud accounts. Create a free account to enable this.</p>`}
             </div>
           </div>
         </div>
