@@ -27,6 +27,39 @@ const JWT_SECRET = process.env.JWT_SECRET || 'cbt_master_secret_key_2025';
 // Middlewares
 app.use(cors());
 app.use(express.json());
+
+// Database connection helper (cached for serverless)
+let cachedDb = null;
+export const connectToDatabase = async () => {
+  if (cachedDb && mongoose.connection.readyState === 1) {
+    return cachedDb;
+  }
+  const mongoUri = process.env.MONGODB_URI;
+  if (!mongoUri || mongoUri.includes('YOUR_MONGODB_URI') || mongoUri.includes('<username>')) {
+    console.warn('⚠️ MONGODB_URI not configured.');
+    return null;
+  }
+  try {
+    console.log('⏳ Connecting to MongoDB Atlas cluster...');
+    cachedDb = await mongoose.connect(mongoUri, { bufferCommands: false });
+    console.log('✅ Connected successfully to MongoDB Atlas Cluster!');
+    return cachedDb;
+  } catch (err) {
+    console.error('❌ MongoDB Atlas connection error:', err.message);
+    throw err;
+  }
+};
+
+// Middleware: ensure database connection is ready for incoming requests BEFORE routes run
+app.use(async (req, res, next) => {
+  try {
+    await connectToDatabase();
+  } catch (err) {
+    console.error('Database connection error in request:', err.message);
+  }
+  next();
+});
+
 // Only serve static files in local dev — on Vercel, the CDN handles them
 if (!process.env.VERCEL) {
   app.use(express.static(rootDir));
@@ -97,7 +130,12 @@ const authenticateToken = (req, res, next) => {
 // ========================================================
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
+  try {
+    await connectToDatabase();
+  } catch (err) {
+    console.error('Health check DB error:', err.message);
+  }
   const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
   res.json({
     status: 'ok',
@@ -550,37 +588,6 @@ app.get('/api/leaderboard', async (req, res) => {
 // ========================================================
 // 3. Server Initialization & MongoDB Connection (Serverless-Ready)
 // ========================================================
-let cachedDb = null;
-
-export const connectToDatabase = async () => {
-  if (cachedDb && mongoose.connection.readyState === 1) {
-    return cachedDb;
-  }
-  const mongoUri = process.env.MONGODB_URI;
-  if (!mongoUri || mongoUri.includes('YOUR_MONGODB_URI') || mongoUri.includes('<username>')) {
-    console.warn('⚠️ MONGODB_URI not configured.');
-    return null;
-  }
-  try {
-    console.log('⏳ Connecting to MongoDB Atlas cluster...');
-    cachedDb = await mongoose.connect(mongoUri, { bufferCommands: false });
-    console.log('✅ Connected successfully to MongoDB Atlas Cluster!');
-    return cachedDb;
-  } catch (err) {
-    console.error('❌ MongoDB Atlas connection error:', err.message);
-    throw err;
-  }
-};
-
-// Middleware: ensure database connection is ready for incoming requests
-app.use(async (req, res, next) => {
-  try {
-    await connectToDatabase();
-  } catch (err) {
-    console.error('Database connection error in request:', err.message);
-  }
-  next();
-});
 
 // SPA Fallback: serve index.html for root or any frontend route (local dev only)
 // On Vercel, the vercel.json routes catch-all handles this via CDN
