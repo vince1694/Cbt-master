@@ -27,10 +27,12 @@ function getBrevo() {
   return _brevo;
 }
 
-const SENDER = {
-  name: process.env.EMAIL_SENDER_NAME || 'CBT Master',
-  email: process.env.EMAIL_SENDER_ADDRESS || 'noreply@cbtmaster.ng'
-};
+function getSender() {
+  return {
+    name: process.env.EMAIL_SENDER_NAME || 'CBT Master',
+    email: process.env.EMAIL_SENDER_ADDRESS || 'ifeanyichukwubethel2@gmail.com'
+  };
+}
 
 const APP_URL = process.env.APP_URL || 'http://localhost:5500';
 
@@ -243,7 +245,7 @@ function otpHtml({ name, otp, isResend }) {
 async function sendEmail({ to, name, subject, html }) {
   try {
     const res = await getBrevo().transactionalEmails.sendTransacEmail({
-      sender: SENDER,
+      sender: getSender(),
       to: [{ email: to, name }],
       subject,
       htmlContent: html

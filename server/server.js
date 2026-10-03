@@ -203,7 +203,13 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     // Send OTP email
-    await sendOtpEmail({ to: email, name, otp });
+    const emailRes = await sendOtpEmail({ to: email, name, otp });
+    if (!emailRes.success) {
+      console.error('Failed to send OTP email:', emailRes.error);
+      return res.status(500).json({
+        error: `Account created, but email failed: ${emailRes.error}. Please check your spam folder or try again.`
+      });
+    }
 
     res.status(200).json({
       requiresOtp: true,
@@ -323,7 +329,10 @@ app.post('/api/auth/resend-otp', async (req, res) => {
     user.otpResendLastAt = new Date();
     await user.save();
 
-    await sendOtpEmail({ to: email, name: user.name, otp, isResend: true });
+    const emailRes = await sendOtpEmail({ to: email, name: user.name, otp, isResend: true });
+    if (!emailRes.success) {
+      return res.status(500).json({ error: `Could not send verification email: ${emailRes.error}` });
+    }
 
     res.json({ message: 'A new verification code has been sent to your email.' });
   } catch (err) {
