@@ -14,14 +14,14 @@ const STORAGE_KEYS = {
 };
 
 const DEFAULT_PROFILE = {
-  name: "Future Scholar",
+  name: "Candidate",
   department: "Science", // Science, Arts, Commercial
-  targetJambScore: 290,
+  targetJambScore: 280,
   targetInstitution: "University of Lagos (UNILAG)",
   preferredCourse: "Computer Science",
-  streakDays: 4,
-  lastStudyDate: new Date().toISOString().split("T")[0],
-  totalTimeMinutes: 145
+  streakDays: 0,
+  lastStudyDate: null,
+  totalTimeMinutes: 0
 };
 
 const DEFAULT_SETTINGS = {
@@ -40,7 +40,21 @@ export const Storage = {
       return DEFAULT_PROFILE;
     }
     try {
-      return { ...DEFAULT_PROFILE, ...JSON.parse(raw) };
+      const parsed = JSON.parse(raw);
+      // Automatically purge legacy mock or demo user state
+      if (parsed.name === "Demo Student" || parsed.name === "Future Scholar" || parsed.email === "demo@cbtmaster.ng") {
+        const cleaned = {
+          ...DEFAULT_PROFILE,
+          name: localStorage.getItem('cbt_user_name') || "Candidate",
+          email: localStorage.getItem('cbt_user_email') || "",
+          streakDays: 0,
+          totalTimeMinutes: 0,
+          lastStudyDate: null
+        };
+        localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(cleaned));
+        return cleaned;
+      }
+      return { ...DEFAULT_PROFILE, ...parsed };
     } catch {
       return DEFAULT_PROFILE;
     }

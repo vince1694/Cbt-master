@@ -1,9 +1,9 @@
 /**
  * CBT Master — Offline Service Worker
- * Caches core app shell, CSS, JavaScript, and Past Questions
- * so candidates can practice seamlessly without internet connection.
+ * Network-First for navigation/HTML (ensures immediate updates on release),
+ * Stale-While-Revalidate for static assets, with offline fallback.
  */
-const CACHE_NAME = 'cbt-master-v3';
+const CACHE_NAME = 'cbt-master-v5';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -16,11 +16,14 @@ const ASSETS_TO_CACHE = [
   './css/novel-hub.css',
   './css/features.css',
   './js/app.js',
+  './js/api.js',
   './js/auth.js',
   './js/auth-view.js',
   './js/cbt-engine.js',
   './js/cbt-view.js',
   './js/dashboard.js',
+  './js/profile-view.js',
+  './js/result-view.js',
   './js/storage.js',
   './js/sound-fx.js',
   './js/icons.js',
@@ -46,10 +49,9 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // Cache assets individually — if any one fails (404 etc.), skip it
       return Promise.allSettled(
-        ASSETS_TO_CACHE.map(url =>
-          cache.add(url).catch(err => console.warn('[SW] Failed to cache:', url, err.message))
+        ASSETS_TO_CACHE.map((url) =>
+          cache.add(url).catch((err) => console.warn('[SW] Pre-cache skip:', url, err.message))
         )
       );
     }).then(() => self.skipWaiting())
@@ -67,26 +69,43 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // Skip non-GET and API backend endpoints
+  if (event.request.method !== 'GET' || url.pathname.startsWith('/api/')) {
+    return;
+  }
+
+  // Navigation (HTML document requests): Network-first so fresh code loads on click
+  if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request).then((cached) => cached || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // Static assets: Stale-While-Revalidate (fetch newest in background, serve cache immediately)
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+      const fetchPromise = fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
           return networkResponse;
-        }
-        const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
-        return networkResponse;
-      }).catch(() => {
-        // Fallback to cached index.html for navigation requests
-        if (event.request.mode === 'navigate') {
-          return caches.match('./index.html');
-        }
-      });
+        })
+        .catch(() => null);
+
+      return cachedResponse || fetchPromise;
     })
   );
 });

@@ -19,10 +19,11 @@ export const Dashboard = {
     const bookmarks = Storage.getBookmarks();
     const currentDept = DEPARTMENTS[profile.department] || DEPARTMENTS.Science;
 
-    // Projected JAMB score estimate based on avg percentage
-    const projectedJamb = Math.round((analytics.averagePercentage || 60) * 4);
+    // Projected JAMB score estimate based on actual performance (no fake readings)
+    const hasTests = analytics.totalTestsTaken > 0;
+    const projectedJamb = hasTests ? Math.round(analytics.averagePercentage * 4) : 0;
     const targetJamb = profile.targetJambScore || 280;
-    const progressPercent = Math.min(100, Math.round((projectedJamb / targetJamb) * 100));
+    const progressPercent = hasTests ? Math.min(100, Math.round((projectedJamb / targetJamb) * 100)) : 0;
 
     // Department vector icons
     const deptIconMap = {
@@ -57,7 +58,7 @@ export const Dashboard = {
             <div class="streak-pill" title="Consecutive Practice Days">
               ${Icons.flame}
               <div>
-                <span class="streak-count">${profile.streakDays || 1} Days</span>
+                <span class="streak-count">${profile.streakDays || 0} Days</span>
                 <span class="streak-label">Study Streak</span>
               </div>
             </div>
@@ -122,10 +123,12 @@ export const Dashboard = {
             </div>
             <div class="target-comparison">
               <div class="score-display">
-                <span class="current-score">${projectedJamb}</span>
+                <span class="current-score">${hasTests ? projectedJamb : '---'}</span>
                 <span class="score-denom">/ 400</span>
               </div>
-              <div class="target-subtext">Target: <strong>${targetJamb}</strong> (${progressPercent}% ready)</div>
+              <div class="target-subtext">
+                Target: <strong>${targetJamb}</strong> ${hasTests ? `(${progressPercent}% ready)` : '&bull; Complete a mock test to calculate'}
+              </div>
             </div>
             <div class="progress-bar-bg">
               <div class="progress-bar-fill" style="width: ${progressPercent}%; background: ${currentDept.color};"></div>

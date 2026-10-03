@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#090d16">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
   <title>CBT Master — JAMB UTME & WAEC WASSCE Practice Platform</title>
   <meta name="description" content="Nigeria's #1 CBT practice platform. Prepare for JAMB UTME and WAEC WASSCE with authentic vetted past questions, realistic exam simulation, on-screen calculator, and step-by-step explanations for Science, Arts and Commercial departments.">
@@ -95,10 +95,13 @@
         _showErr('Error: ' + ((r && r.message) ? r.message : String(r || 'unknown')));
       });
 
-      // Dynamically inject the ES module — this way old browsers never even attempt to parse it
+      // Dynamically inject the ES module with cache busting
       var s = document.createElement('script');
       s.type = 'module';
-      s.src = 'js/app.js';
+      s.src = 'js/app.js?v=20250103b';
+      s.onerror = function() {
+        _showErr('Failed to load application modules. Please check your network connection and tap Reload.');
+      };
       document.head.appendChild(s);
     })();
   </script>

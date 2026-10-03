@@ -120,14 +120,7 @@ export const AuthView = {
                 </button>
               </form>
 
-              <div class="auth-divider"><span>or continue with</span></div>
-
-              <button class="auth-demo-btn" id="demo-login-btn">
-                <span>🚀</span>
-                <span>Continue as Guest (Demo Mode)</span>
-              </button>
-
-              <p class="auth-switch-text">
+              <p class="auth-switch-text" style="margin-top: 1.25rem;">
                 Don't have an account?
                 <button class="auth-switch-link" id="go-signup-btn">Create one free</button>
               </p>
@@ -301,12 +294,6 @@ export const AuthView = {
       this._handleSignup(onAuthSuccess);
     });
 
-    // Demo login
-    const demoBtn = document.getElementById("demo-login-btn");
-    demoBtn?.addEventListener("click", () => {
-      this._handleDemoLogin(onAuthSuccess);
-    });
-
     // Forgot Password — opens animated modal
     const forgotBtn = document.getElementById('forgot-pw-btn');
     forgotBtn?.addEventListener('click', () => this._showForgotPasswordModal());
@@ -373,6 +360,25 @@ export const AuthView = {
         } else if (res.ok && data.token) {
           localStorage.setItem('cbt_auth_token', data.token);
           localStorage.setItem('cbt_user_email', email);
+          if (data.user && data.user.name) {
+            localStorage.setItem('cbt_user_name', data.user.name);
+          }
+          const userId = (data.user && (data.user.id || data.user._id)) || 'cloud_' + Date.now();
+          localStorage.setItem('cbtmaster_session', JSON.stringify({
+            userId,
+            createdAt: Date.now(),
+            expiry: Date.now() + (30 * 24 * 60 * 60 * 1000)
+          }));
+          if (data.user) {
+            Storage.updateUserProfile({
+              name: data.user.name || 'Candidate',
+              email: data.user.email || email,
+              department: data.user.department || 'Science',
+              targetJambScore: data.user.targetJambScore || 280,
+              targetInstitution: data.user.targetInstitution || 'University of Lagos (UNILAG)',
+              preferredCourse: data.user.preferredCourse || 'Computer Science'
+            });
+          }
           result = { success: true, user: data.user };
         } else {
           result = { success: false, error: data.error || 'Invalid email or password.' };
@@ -468,31 +474,6 @@ export const AuthView = {
         this._showError('signup-error-box', result.error || 'Signup failed. Check your connection.');
       }
     }
-  },
-
-  _handleDemoLogin(onAuthSuccess) {
-    const demoUser = {
-      name: "Demo Student",
-      email: "demo@cbtmaster.ng",
-      department: "Science",
-      targetJambScore: 280,
-      targetInstitution: "University of Lagos (UNILAG)",
-      preferredCourse: "Computer Science"
-    };
-
-    // Set a demo session
-    localStorage.setItem("cbtmaster_session", JSON.stringify({
-      userId: "demo_user",
-      createdAt: Date.now(),
-      expiry: Date.now() + (24 * 60 * 60 * 1000) // 1 day demo
-    }));
-
-    // Sync profile
-    localStorage.setItem("jamb_waec_user_profile", JSON.stringify({
-      ...demoUser, streakDays: 0, totalTimeMinutes: 0, lastStudyDate: null
-    }));
-
-    this._animateSuccess(() => onAuthSuccess(demoUser));
   },
 
   _showOtpScreen(email, name, onAuthSuccess) {
@@ -596,6 +577,28 @@ export const AuthView = {
         if (res.ok && data.token) {
           localStorage.setItem('cbt_auth_token', data.token);
           localStorage.setItem('cbt_user_email', email);
+          if (data.user && data.user.name) {
+            localStorage.setItem('cbt_user_name', data.user.name);
+          }
+          const userId = (data.user && (data.user.id || data.user._id)) || 'cloud_' + Date.now();
+          localStorage.setItem('cbtmaster_session', JSON.stringify({
+            userId,
+            createdAt: Date.now(),
+            expiry: Date.now() + (30 * 24 * 60 * 60 * 1000)
+          }));
+          if (data.user) {
+            Storage.updateUserProfile({
+              name: data.user.name || name || 'Candidate',
+              email: data.user.email || email,
+              department: data.user.department || 'Science',
+              targetJambScore: data.user.targetJambScore || 280,
+              targetInstitution: data.user.targetInstitution || 'University of Lagos (UNILAG)',
+              preferredCourse: data.user.preferredCourse || 'Computer Science',
+              streakDays: 0,
+              totalTimeMinutes: 0,
+              lastStudyDate: null
+            });
+          }
           document.getElementById('otp-success-msg').classList.remove('hidden');
           boxes.forEach(b => { b.disabled = true; b.style.borderColor = 'rgba(0,200,150,0.6)'; });
           setTimeout(() => this._animateSuccess(() => onAuthSuccess(data.user)), 700);
