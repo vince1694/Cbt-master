@@ -10,9 +10,15 @@ import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { sendWelcomeEmail, sendResultEmail, sendPasswordResetEmail, sendStreakReminderEmail, sendOtpEmail } from './email-service.js';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, '..');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -21,6 +27,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'cbt_master_secret_key_2025';
 // Middlewares
 app.use(cors());
 app.use(express.json());
+app.use(express.static(rootDir));
 
 // ========================================================
 // 1. Mongoose Database Models
@@ -562,6 +569,14 @@ app.use(async (req, res, next) => {
     console.error('Database connection error in request:', err.message);
   }
   next();
+});
+
+// SPA Fallback: serve index.html for root or any frontend route
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(rootDir, 'index.html'));
 });
 
 // Standalone execution (Local development)
