@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -9,29 +10,36 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
   <title>CBT Master — JAMB UTME & WAEC WASSCE Practice Platform</title>
-  <meta name="description" content="Nigeria's #1 CBT practice platform. Prepare for JAMB UTME and WAEC WASSCE with authentic vetted past questions, realistic exam simulation, on-screen calculator, and step-by-step explanations for Science, Arts and Commercial departments.">
-  <meta name="keywords" content="JAMB CBT, WAEC past questions, UTME 2024, UTME 2025, WASSCE, Science, Arts, Commercial, CBT Simulator, Nigerian past questions, JAMB practice">
+  <meta name="description"
+    content="Nigeria's #1 CBT practice platform. Prepare for JAMB UTME and WAEC WASSCE with authentic vetted past questions, realistic exam simulation, on-screen calculator, and step-by-step explanations for Science, Arts and Commercial departments.">
+  <meta name="keywords"
+    content="JAMB CBT, WAEC past questions, UTME 2024, UTME 2025, WASSCE, Science, Arts, Commercial, CBT Simulator, Nigerian past questions, JAMB practice">
 
-  <link rel="canonical" href="https://cbtmaster.guru/">
+  <link rel="canonical" href="https://cbtmasters.guru/">
 
   <!-- Open Graph / Social Sharing -->
   <meta property="og:title" content="CBT Master — JAMB UTME & WAEC WASSCE Practice Platform">
-  <meta property="og:description" content="Prepare smarter with vetted past questions, real exam simulation, and detailed analytics.">
+  <meta property="og:description"
+    content="Prepare smarter with vetted past questions, real exam simulation, and detailed analytics.">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://cbtmaster.guru/">
+  <meta property="og:url" content="https://cbtmasters.guru/">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="CBT Master — JAMB UTME & WAEC Practice Platform">
-  <meta name="twitter:description" content="Authentic past questions, real CBT timer & calculator simulation, and detailed step-by-step explanations.">
+  <meta name="twitter:description"
+    content="Authentic past questions, real CBT timer & calculator simulation, and detailed step-by-step explanations.">
 
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>">
   <link rel="manifest" href="manifest.json">
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap"
+    rel="stylesheet">
 
   <!-- Stylesheets -->
   <link rel="stylesheet" href="css/style.css">
@@ -42,6 +50,7 @@
   <link rel="stylesheet" href="css/novel-hub.css">
   <link rel="stylesheet" href="css/features.css">
 </head>
+
 <body>
   <!-- Header (hidden during auth, shown after login) -->
   <header class="app-header" id="app-header"></header>
@@ -62,10 +71,10 @@
 
   <!-- App Bootstrap: compatibility check + conditional module load -->
   <script>
-    (function() {
+    (function () {
       // Test for optional chaining (ES2020) — Safari < 13.4 / iOS < 14 fails this
       var supported = false;
-      try { new Function('return null?.x')(); supported = true; } catch(e) {}
+      try { new Function('return null?.x')(); supported = true; } catch (e) { }
 
       if (!supported) {
         // Browser too old — show friendly upgrade message, DO NOT load the app module
@@ -94,11 +103,11 @@
           '<button onclick="if(window.caches){caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k);}))}).then(function(){location.reload(true)});}else{location.reload(true);}" style="background:#334155;color:#94a3b8;border:none;padding:.6rem 1.2rem;border-radius:8px;cursor:pointer;">Clear Cache</button>' +
           '</div>';
       }
-      window.addEventListener('error', function(e) {
+      window.addEventListener('error', function (e) {
         var f = e.filename ? e.filename.split('/').pop() + ':' + e.lineno + ' \u2014 ' : '';
         _showErr(f + e.message);
       });
-      window.addEventListener('unhandledrejection', function(e) {
+      window.addEventListener('unhandledrejection', function (e) {
         var r = e.reason;
         _showErr('Error: ' + ((r && r.message) ? r.message : String(r || 'unknown')));
       });
@@ -107,7 +116,7 @@
       var s = document.createElement('script');
       s.type = 'module';
       s.src = 'js/app.js?v=20250103b';
-      s.onerror = function() {
+      s.onerror = function () {
         _showErr('Failed to load application modules. Please check your network connection and tap Reload.');
       };
       document.head.appendChild(s);
@@ -117,16 +126,16 @@
   <!-- PWA Service Worker Registration -->
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.register('./sw.js').then(function(reg) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js').then(function (reg) {
           if (reg && reg.update) reg.update();
           console.log('[PWA] ServiceWorker registered:', reg.scope);
-        }).catch(function(err) {
+        }).catch(function (err) {
           console.log('[PWA] ServiceWorker failed:', err);
         });
       });
     }
   </script>
 </body>
-</html>
 
+</html>
