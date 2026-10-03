@@ -10,25 +10,25 @@ export const biologyQuestions = [
     topic: "Cell Structure & Function", department: ["Science"],
     question: "Which organelle is responsible for the production of ATP through aerobic respiration in eukaryotic cells?",
     options: [
-      { key: "A", text: "Mitochondrion" },
-      { key: "B", text: "Ribosome" },
-      { key: "C", text: "Golgi apparatus" },
-      { key: "D", text: "Endoplasmic reticulum" }
+      { key: "A", text: "Ribosome" },
+      { key: "B", text: "Golgi apparatus" },
+      { key: "C", text: "Endoplasmic reticulum" },
+      { key: "D", text: "Mitochondrion" }
     ],
-    correctAnswer: "A",
+    correctAnswer: "D",
     explanation: "The mitochondrion is the 'powerhouse of the cell'. It is the site of aerobic respiration where glucose is oxidized to produce ATP (adenosine triphosphate) through the Krebs cycle and oxidative phosphorylation."
   },
   {
-    id: "bio_jamb_02", exam: "JAMB", year: "2022", subject: "Biology",
+    id: "bio_cell_wall_01", exam: "JAMB", year: "2022", subject: "Biology",
     topic: "Cell Structure & Function", department: ["Science"],
     question: "The cell wall of plant cells is composed primarily of:",
     options: [
-      { key: "A", text: "Cellulose" },
-      { key: "B", text: "Chitin" },
-      { key: "C", text: "Peptidoglycan" },
+      { key: "A", text: "Chitin" },
+      { key: "B", text: "Peptidoglycan" },
+      { key: "C", text: "Cellulose" },
       { key: "D", text: "Murein" }
     ],
-    correctAnswer: "A",
+    correctAnswer: "C",
     explanation: "Plant cell walls are composed primarily of cellulose, a polysaccharide made of glucose units linked by β-1,4-glycosidic bonds. Chitin is found in fungal cell walls; peptidoglycan/murein in bacterial cell walls."
   },
   {
@@ -144,12 +144,12 @@ export const biologyQuestions = [
     topic: "Human Physiology – Excretion", department: ["Science"],
     question: "The functional unit of the kidney responsible for filtering blood and producing urine is the:",
     options: [
-      { key: "A", text: "Nephron" },
-      { key: "B", text: "Glomerulus" },
-      { key: "C", text: "Renal tubule" },
-      { key: "D", text: "Bowman's capsule" }
+      { key: "A", text: "Glomerulus" },
+      { key: "B", text: "Renal tubule" },
+      { key: "C", text: "Bowman's capsule" },
+      { key: "D", text: "Nephron" }
     ],
-    correctAnswer: "A",
+    correctAnswer: "D",
     explanation: "The nephron is the complete functional unit of the kidney. Each kidney contains approximately 1 million nephrons. Each nephron consists of the glomerulus, Bowman's capsule, proximal convoluted tubule, loop of Henle, distal convoluted tubule, and collecting duct — all working together to filter blood and concentrate urine."
   },
   {
@@ -199,11 +199,11 @@ export const biologyQuestions = [
     question: "The relationship between a shark and a remora fish (which feeds on the shark's food scraps without harming or benefiting the shark) is an example of:",
     options: [
       { key: "A", text: "Mutualism" },
-      { key: "B", text: "Commensalism" },
-      { key: "C", text: "Parasitism" },
-      { key: "D", text: "Predation" }
+      { key: "B", text: "Parasitism" },
+      { key: "C", text: "Predation" },
+      { key: "D", text: "Commensalism" }
     ],
-    correctAnswer: "B",
+    correctAnswer: "D",
     explanation: "Commensalism is a relationship where one organism (the remora) benefits while the other (the shark) is neither harmed nor helped. Mutualism benefits both; parasitism harms the host; predation involves one organism killing another."
   },
 

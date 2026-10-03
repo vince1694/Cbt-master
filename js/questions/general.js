@@ -31,12 +31,12 @@ export const generalQuestions = [
     department: ["Science", "Arts", "Commercial"],
     question: "The primary government agency mandated in Nigeria to combat the cultivation, trafficking, and unauthorized consumption of illicit narcotics is:",
     options: [
-      { key: "A", text: "National Drug Law Enforcement Agency (NDLEA)" },
-      { key: "B", text: "National Agency for Food and Drug Administration and Control (NAFDAC)" },
+      { key: "A", text: "National Agency for Food and Drug Administration and Control (NAFDAC)" },
+      { key: "B", text: "National Drug Law Enforcement Agency (NDLEA)" },
       { key: "C", text: "Economic and Financial Crimes Commission (EFCC)" },
       { key: "D", text: "Nigeria Security and Civil Defence Corps (NSCDC)" }
     ],
-    correctAnswer: "A",
+    correctAnswer: "B",
     explanation: "The NDLEA was established by Decree No. 48 of 1989 (now an Act of Parliament) to eliminate illicit trafficking and abuse of hard narcotic substances. NAFDAC regulates food, packaged water, chemicals, and pharmaceuticals."
   },
   {
@@ -48,12 +48,12 @@ export const generalQuestions = [
     department: ["Science", "Arts", "Commercial"],
     question: "Political apathy among eligible voters in a democratic nation can be minimized through:",
     options: [
-      { key: "A", text: "intensive civic voter education and institutional transparency" },
-      { key: "B", text: "imposition of heavy fines on non-voters" },
-      { key: "C", text: "banning political debates in the mass media" },
+      { key: "A", text: "imposition of heavy fines on non-voters" },
+      { key: "B", text: "banning political debates in the mass media" },
+      { key: "C", text: "intensive civic voter education and institutional transparency" },
       { key: "D", text: "postponing elections indefinitely" }
     ],
-    correctAnswer: "A",
+    correctAnswer: "C",
     explanation: "Political apathy stems from ignorance, distrust in the electoral process, and lack of civic consciousness. Public enlightenment and ensuring credible, transparent balloting rebuild civic engagement."
   },
 
@@ -67,12 +67,12 @@ export const generalQuestions = [
     department: ["Science", "Commercial"],
     question: "The process whereby soluble plant nutrients are washed down beyond the reach of plant root systems by percolating rainwater is called:",
     options: [
-      { key: "A", text: "Leaching" },
-      { key: "B", text: "Capillarity" },
-      { key: "C", text: "Erosion" },
-      { key: "D", text: "Infiltration" }
+      { key: "A", text: "Capillarity" },
+      { key: "B", text: "Erosion" },
+      { key: "C", text: "Infiltration" },
+      { key: "D", text: "Leaching" }
     ],
-    correctAnswer: "A",
+    correctAnswer: "D",
     explanation: "Leaching is the downward movement and loss of soluble mineral salts and plant nutrients through the soil profile caused by gravitational percolation of water beyond root extraction depth."
   },
   {
@@ -84,12 +84,12 @@ export const generalQuestions = [
     department: ["Science", "Commercial"],
     question: "In the digestive system of ruminant livestock (such as cattle, sheep, and goats), the true stomach that secretes digestive gastric juices is the:",
     options: [
-      { key: "A", text: "Abomasum" },
-      { key: "B", text: "Rumen (Paunch)" },
+      { key: "A", text: "Rumen (Paunch)" },
+      { key: "B", text: "Abomasum" },
       { key: "C", text: "Reticulum (Honeycomb)" },
       { key: "D", text: "Omasum (Manyplies)" }
     ],
-    correctAnswer: "A",
+    correctAnswer: "B",
     explanation: "Ruminants possess four stomach compartments: Rumen (largest fermentation chamber), Reticulum (hardware/honeycomb), Omasum (water reabsorption), and the Abomasum, which corresponds to the true monogastric stomach secreting hydrochloric acid and pepsin."
   },
   {
@@ -101,12 +101,12 @@ export const generalQuestions = [
     department: ["Science", "Commercial"],
     question: "The viral disease affecting cassava in West Africa characterized by distorted, chlorotic leaves with mosaic yellow and green patterns is transmitted by:",
     options: [
-      { key: "A", text: "Whitefly (Bemisia tabaci)" },
-      { key: "B", text: "Stem borer (Busseola fusca)" },
-      { key: "C", text: "Variegated grasshopper (Zonocerus variegatus)" },
+      { key: "A", text: "Stem borer (Busseola fusca)" },
+      { key: "B", text: "Variegated grasshopper (Zonocerus variegatus)" },
+      { key: "C", text: "Whitefly (Bemisia tabaci)" },
       { key: "D", text: "Aphids" }
     ],
-    correctAnswer: "A",
+    correctAnswer: "C",
     explanation: "Cassava Mosaic Disease (CMD) is caused by the Cassava mosaic geminivirus and is vectored and spread from infected to healthy cassava plants primarily by the whitefly (*Bemisia tabaci*)."
   }
 ];

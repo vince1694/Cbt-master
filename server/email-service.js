@@ -41,7 +41,7 @@ function getSender() {
   };
 }
 
-const APP_URL = process.env.APP_URL || 'http://localhost:5500';
+const APP_URL = process.env.APP_URL || 'https://cbtmaster.guru';
 
 // ── Base HTML wrapper ─────────────────────────────────────────────────────────
 const baseTemplate = (content, headerBadge = 'OFFICIAL CANDIDATE AUTHENTICATION') => `<!DOCTYPE html>

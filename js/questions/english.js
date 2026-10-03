@@ -104,11 +104,11 @@ export const englishQuestions = [
     question: "Select the option that best explains the information conveyed in the sentence:\n\n'Had Amina prepared diligently for the test, she would not have felt down in the dumps.'",
     options: [
       { key: "A", text: "Amina prepared well and passed with flying colours." },
-      { key: "B", text: "Amina did not prepare diligently, so she felt very sad and disappointed." },
-      { key: "C", text: "Amina was sad despite preparing very hard." },
-      { key: "D", text: "Amina prepared hard, but the examination was cancelled." }
+      { key: "B", text: "Amina was sad despite preparing very hard." },
+      { key: "C", text: "Amina prepared hard, but the examination was cancelled." },
+      { key: "D", text: "Amina did not prepare diligently, so she felt very sad and disappointed." }
     ],
-    correctAnswer: "B",
+    correctAnswer: "D",
     explanation: "The third conditional inversion ('Had Amina prepared...') indicates an unfulfilled condition in the past. Amina did not prepare, and 'down in the dumps' is an idiom meaning feeling depressed, unhappy, or gloomy."
   },
   {

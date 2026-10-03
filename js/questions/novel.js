@@ -23,11 +23,11 @@ export const novelQuestions = [
     question: "In 'The Life Changer', what is Ummi's full professional title at the beginning of the novel?",
     options: [
       { key: "A", text: "Professor of Linguistics at the University of Maiduguri" },
-      { key: "B", text: "Senior Lecturer in Sociology at Ahmadu Bello University, Zaria" },
-      { key: "C", text: "Associate Professor of Pharmacology at the University of Abuja" },
-      { key: "D", text: "Dean of the Faculty of Arts and Social Sciences, UNILAG" }
+      { key: "B", text: "Associate Professor of Pharmacology at the University of Abuja" },
+      { key: "C", text: "Dean of the Faculty of Arts and Social Sciences, UNILAG" },
+      { key: "D", text: "Senior Lecturer in Sociology at Ahmadu Bello University, Zaria" }
     ],
-    correctAnswer: "B",
+    correctAnswer: "D",
     explanation: "Ummi (Dr. Ummi) is a Senior Lecturer in the Department of Sociology at Ahmadu Bello University (ABU), Zaria. Her husband Omar is a Professor at the same university. This academic setting is central to the novel's themes."
   },
   {
@@ -40,11 +40,11 @@ export const novelQuestions = [
     question: "What is the primary narrative technique used in 'The Life Changer' to explore university life?",
     options: [
       { key: "A", text: "A series of letters written between students and their parents" },
-      { key: "B", text: "A mother storytelling to her daughters about the dangers and rewards of university life" },
-      { key: "C", text: "A third-person omniscient narration following multiple protagonists simultaneously" },
-      { key: "D", text: "A stream-of-consciousness diary written by Salma during her time at ABU" }
+      { key: "B", text: "A third-person omniscient narration following multiple protagonists simultaneously" },
+      { key: "C", text: "A stream-of-consciousness diary written by Salma during her time at ABU" },
+      { key: "D", text: "A mother storytelling to her daughters about the dangers and rewards of university life" }
     ],
-    correctAnswer: "B",
+    correctAnswer: "D",
     explanation: "The central narrative frame of 'The Life Changer' is Ummi telling cautionary and inspirational stories to her three daughters — Bint, Teemah, and Jamila — about real experiences at the university, particularly Salma's tragic story and Talle's story."
   },
   {
@@ -57,11 +57,11 @@ export const novelQuestions = [
     question: "What are the names of Ummi and Omar's three daughters in 'The Life Changer'?",
     options: [
       { key: "A", text: "Salma, Bint, and Teemah" },
-      { key: "B", text: "Bint, Teemah, and Jamila" },
-      { key: "C", text: "Teemah, Jamila, and Rahma" },
-      { key: "D", text: "Bint, Salma, and Fatima" }
+      { key: "B", text: "Teemah, Jamila, and Rahma" },
+      { key: "C", text: "Bint, Salma, and Fatima" },
+      { key: "D", text: "Bint, Teemah, and Jamila" }
     ],
-    correctAnswer: "B",
+    correctAnswer: "D",
     explanation: "Ummi and Professor Omar have three daughters: Bint (the eldest who has just been admitted to university), Teemah (the middle daughter), and Jamila (the youngest). It is for these daughters that Ummi shares her cautionary university stories."
   },
   {
@@ -74,11 +74,11 @@ export const novelQuestions = [
     question: "Why is Ummi particularly concerned about her daughter Bint at the opening of 'The Life Changer'?",
     options: [
       { key: "A", text: "Bint had just been expelled from secondary school for fighting" },
-      { key: "B", text: "Bint had been newly admitted to university and was about to experience campus life for the first time" },
-      { key: "C", text: "Bint had announced her plans to get married before completing her education" },
-      { key: "D", text: "Bint had failed her JAMB UTME twice and was depressed" }
+      { key: "B", text: "Bint had announced her plans to get married before completing her education" },
+      { key: "C", text: "Bint had failed her JAMB UTME twice and was depressed" },
+      { key: "D", text: "Bint had been newly admitted to university and was about to experience campus life for the first time" }
     ],
-    correctAnswer: "B",
+    correctAnswer: "D",
     explanation: "Bint's fresh admission to university is the catalyst for the whole novel. As a mother who has seen campus life's pitfalls firsthand, Ummi is determined to warn and guide Bint through storytelling before she leaves home."
   },
 
@@ -144,11 +144,11 @@ export const novelQuestions = [
     question: "What punishment did the Examination Malpractice Committee recommend for Salma after she was caught cheating?",
     options: [
       { key: "A", text: "Rustication for two semesters and community service" },
-      { key: "B", text: "Expulsion from the university" },
-      { key: "C", text: "A stern letter of reprimand and repeating the course" },
-      { key: "D", text: "Suspension for one academic session" }
+      { key: "B", text: "A stern letter of reprimand and repeating the course" },
+      { key: "C", text: "Suspension for one academic session" },
+      { key: "D", text: "Expulsion from the university" }
     ],
-    correctAnswer: "B",
+    correctAnswer: "D",
     explanation: "Salma was officially expelled from Ahmadu Bello University. Despite Habib attempting to bribe Kabir (a committee member) to reduce her punishment, Kabir collected the bribe but did not help Salma. The committee's ruling of expulsion stood."
   },
   {
@@ -178,11 +178,11 @@ export const novelQuestions = [
     question: "Which of the following best describes the central theme of Salma's story in 'The Life Changer'?",
     options: [
       { key: "A", text: "The superiority of rural life over city university life" },
-      { key: "B", text: "The consequences of pride, moral weakness, and dishonest shortcuts" },
-      { key: "C", text: "How romantic relationships help students succeed academically" },
-      { key: "D", text: "The failure of Nigerian universities to protect female students" }
+      { key: "B", text: "How romantic relationships help students succeed academically" },
+      { key: "C", text: "The failure of Nigerian universities to protect female students" },
+      { key: "D", text: "The consequences of pride, moral weakness, and dishonest shortcuts" }
     ],
-    correctAnswer: "B",
+    correctAnswer: "D",
     explanation: "Salma's narrative is a cautionary tale about the devastating consequences of pride (refusing the hostel), moral weakness (forming a relationship with Habib, skipping classes), and dishonest shortcuts (examination malpractice). She loses her degree and university place entirely."
   },
 

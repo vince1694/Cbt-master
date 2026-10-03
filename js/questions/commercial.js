@@ -14,12 +14,12 @@ export const commercialQuestions = [
     department: ["Commercial", "Arts", "Science"],
     question: "When the price of a commodity increases from ₦200 to ₦250, the quantity demanded falls from 500 units to 350 units. Calculate the price elasticity of demand (PED).",
     options: [
-      { key: "A", text: "1.20" },
-      { key: "B", text: "0.83" },
+      { key: "A", text: "0.83" },
+      { key: "B", text: "1.20" },
       { key: "C", text: "1.50" },
       { key: "D", text: "0.60" }
     ],
-    correctAnswer: "A",
+    correctAnswer: "B",
     explanation: "Percentage change in quantity demanded = ((350 - 500) / 500) * 100% = -150/500 * 100% = -30%.\nPercentage change in price = ((250 - 200) / 200) * 100% = 50/200 * 100% = +25%.\nPED = |% ΔQd / % ΔP| = |-30% / 25%| = 1.20.\nSince PED > 1, demand for the commodity is price elastic."
   },
   {
@@ -31,12 +31,12 @@ export const commercialQuestions = [
     department: ["Commercial", "Arts"],
     question: "Under perfect competition, a firm achieves profit-maximizing equilibrium in both the short-run and long-run where:",
     options: [
-      { key: "A", text: "Marginal Cost (MC) = Marginal Revenue (MR) = Price (P)" },
-      { key: "B", text: "Average Cost (AC) = Total Revenue (TR)" },
-      { key: "C", text: "Marginal Revenue (MR) = 0" },
+      { key: "A", text: "Average Cost (AC) = Total Revenue (TR)" },
+      { key: "B", text: "Marginal Revenue (MR) = 0" },
+      { key: "C", text: "Marginal Cost (MC) = Marginal Revenue (MR) = Price (P)" },
       { key: "D", text: "Average Revenue (AR) > Marginal Cost (MC)" }
     ],
-    correctAnswer: "A",
+    correctAnswer: "C",
     explanation: "In perfect competition, price equals Average Revenue (AR) and Marginal Revenue (MR) because firms are price takers. The profit maximization condition is MC = MR, hence MC = MR = P."
   },
   {
@@ -48,12 +48,12 @@ export const commercialQuestions = [
     department: ["Commercial", "Arts"],
     question: "Cost-push inflation is primarily caused by an increase in:",
     options: [
-      { key: "A", text: "the cost of factors of production such as wages and raw materials" },
-      { key: "B", text: "aggregate demand over aggregate supply" },
-      { key: "C", text: "the total money supply in circulation by the central bank" },
-      { key: "D", text: "consumer credit availability" }
+      { key: "A", text: "aggregate demand over aggregate supply" },
+      { key: "B", text: "the total money supply in circulation by the central bank" },
+      { key: "C", text: "consumer credit availability" },
+      { key: "D", text: "the cost of factors of production such as wages and raw materials" }
     ],
-    correctAnswer: "A",
+    correctAnswer: "D",
     explanation: "Cost-push inflation occurs when the overall price level increases due to increases in the cost of production (wages, fuel, raw materials, import duties), causing the aggregate supply curve to shift leftward. Demand-pull is caused by excess aggregate demand."
   },
   {
@@ -84,12 +84,12 @@ export const commercialQuestions = [
     department: ["Commercial"],
     question: "The insurance principle which stipulates that the insured should not be allowed to make a profit from a loss, but only restored to their prior financial state, is:",
     options: [
-      { key: "A", text: "Indemnity" },
-      { key: "B", text: "Insurable Interest" },
+      { key: "A", text: "Insurable Interest" },
+      { key: "B", text: "Indemnity" },
       { key: "C", text: "Uberrimae Fidei (Utmost Good Faith)" },
       { key: "D", text: "Subrogation" }
     ],
-    correctAnswer: "A",
+    correctAnswer: "B",
     explanation: "The Principle of Indemnity states that the insured person must be compensated only to the exact amount of the financial loss incurred, ensuring they neither gain nor profit from an insurance claim. (Note: Life assurance is exempt from strict indemnity)."
   },
   {
@@ -101,12 +101,12 @@ export const commercialQuestions = [
     department: ["Commercial"],
     question: "A major difference between a Private Limited Company and a Public Limited Company is that a Private Limited Company:",
     options: [
-      { key: "A", text: "cannot invite the general public to subscribe for its shares or debentures" },
-      { key: "B", text: "has unlimited liability for its shareholders" },
-      { key: "C", text: "must end its name with 'Plc'" },
+      { key: "A", text: "has unlimited liability for its shareholders" },
+      { key: "B", text: "must end its name with 'Plc'" },
+      { key: "C", text: "cannot invite the general public to subscribe for its shares or debentures" },
       { key: "D", text: "must have a minimum of 50 directors" }
     ],
-    correctAnswer: "A",
+    correctAnswer: "C",
     explanation: "Under corporate law (CAMA in Nigeria), a Private Limited Company ('Ltd') restricts the right to transfer shares and is legally prohibited from inviting the public to subscribe for its shares or debentures. Public companies ('Plc') can issue shares to the public on the Stock Exchange."
   },
   {
@@ -118,12 +118,12 @@ export const commercialQuestions = [
     department: ["Commercial"],
     question: "A document issued by a shipping company acknowledging the receipt of goods on board a vessel and detailing the shipment terms is called a:",
     options: [
-      { key: "A", text: "Bill of Lading" },
-      { key: "B", text: "Consular Invoice" },
-      { key: "C", text: "Certificate of Origin" },
-      { key: "D", text: "Letter of Hypothecation" }
+      { key: "A", text: "Consular Invoice" },
+      { key: "B", text: "Certificate of Origin" },
+      { key: "C", text: "Letter of Hypothecation" },
+      { key: "D", text: "Bill of Lading" }
     ],
-    correctAnswer: "A",
+    correctAnswer: "D",
     explanation: "A Bill of Lading (B/L) is a vital shipping document that serves three main purposes: (1) a receipt for cargo loaded on board, (2) evidence of the contract of carriage, and (3) a document of title to the goods."
   },
   {
@@ -154,12 +154,12 @@ export const commercialQuestions = [
     department: ["Commercial"],
     question: "If total assets of a firm are ₦1,250,000 and total liabilities are ₦450,000, what is the value of Owner's Equity (Capital)?",
     options: [
-      { key: "A", text: "₦800,000" },
-      { key: "B", text: "₦1,700,000" },
+      { key: "A", text: "₦1,700,000" },
+      { key: "B", text: "₦800,000" },
       { key: "C", text: "₦950,000" },
       { key: "D", text: "₦700,000" }
     ],
-    correctAnswer: "A",
+    correctAnswer: "B",
     explanation: "The fundamental accounting equation is: Assets = Capital (Owner's Equity) + Liabilities.\nTherefore: Capital = Assets - Liabilities\nCapital = ₦1,250,000 - ₦450,000 = ₦800,000."
   },
   {
@@ -171,12 +171,12 @@ export const commercialQuestions = [
     department: ["Commercial"],
     question: "In preparing a Bank Reconciliation Statement, uncredited cheques (deposits in transit) are:",
     options: [
-      { key: "A", text: "added to balance as per bank statement or deducted from cash book balance" },
-      { key: "B", text: "deducted from bank statement balance" },
-      { key: "C", text: "credited to the customer's personal account" },
+      { key: "A", text: "deducted from bank statement balance" },
+      { key: "B", text: "credited to the customer's personal account" },
+      { key: "C", text: "added to balance as per bank statement or deducted from cash book balance" },
       { key: "D", text: "debited to the Profit and Loss Account" }
     ],
-    correctAnswer: "A",
+    correctAnswer: "C",
     explanation: "Uncredited cheques are cheques received and already entered on the debit side of the cash book, but which have not yet cleared or been credited by the bank. When starting from the Bank Statement balance, they are added to arrive at the Cash Book balance."
   },
   {
@@ -188,12 +188,12 @@ export const commercialQuestions = [
     department: ["Commercial"],
     question: "A delivery van was purchased for ₦2,000,000. It has an estimated useful life of 5 years and a residual scrap value of ₦200,000. Using the straight-line method, calculate the annual depreciation charge.",
     options: [
-      { key: "A", text: "₦360,000" },
-      { key: "B", text: "₦400,000" },
-      { key: "C", text: "₦440,000" },
-      { key: "D", text: "₦320,000" }
+      { key: "A", text: "₦400,000" },
+      { key: "B", text: "₦440,000" },
+      { key: "C", text: "₦320,000" },
+      { key: "D", text: "₦360,000" }
     ],
-    correctAnswer: "A",
+    correctAnswer: "D",
     explanation: "Straight-line annual depreciation = (Cost of Asset - Residual Value) / Useful life in years\nAnnual Depreciation = (₦2,000,000 - ₦200,000) / 5 = ₦1,800,000 / 5 = ₦360,000 per year."
   },
   {
@@ -222,12 +222,12 @@ export const commercialQuestions = [
     department: ["Commercial", "Arts"],
     question: "A tax system where higher income earners pay a progressively higher proportion of their total income as tax compared to lower income earners is termed:",
     options: [
-      { key: "A", text: "Progressive tax" },
-      { key: "B", text: "Regressive tax" },
+      { key: "A", text: "Regressive tax" },
+      { key: "B", text: "Progressive tax" },
       { key: "C", text: "Proportional flat tax" },
       { key: "D", text: "Specific excise duty" }
     ],
-    correctAnswer: "A",
+    correctAnswer: "B",
     explanation: "A progressive tax places a higher tax rate on high-income earners than on low-income earners, promoting income redistribution and equity. Regressive taxes take a larger percentage of income from low earners."
   },
   {
@@ -239,12 +239,12 @@ export const commercialQuestions = [
     department: ["Commercial"],
     question: "The party who writes and signs a Bill of Exchange, ordering payment to be made, is referred to as the:",
     options: [
-      { key: "A", text: "Drawer" },
-      { key: "B", text: "Drawee" },
-      { key: "C", text: "Payee" },
+      { key: "A", text: "Drawee" },
+      { key: "B", text: "Payee" },
+      { key: "C", text: "Drawer" },
       { key: "D", text: "Endorsee" }
     ],
-    correctAnswer: "A",
+    correctAnswer: "C",
     explanation: "In a Bill of Exchange: The 'Drawer' is the party creating and signing the bill (the creditor). The 'Drawee' is the party directed to pay (the debtor/bank). The 'Payee' is the party to whom payment is ultimately made."
   },
   {
@@ -256,12 +256,12 @@ export const commercialQuestions = [
     department: ["Commercial"],
     question: "Calculate the Working Capital of a firm with the following balances:\nInventory: ₦180,000, Trade Receivables: ₦120,000, Bank Balance: ₦50,000, Trade Payables: ₦110,000, Accrued Expenses: ₦40,000.",
     options: [
-      { key: "A", text: "₦200,000" },
-      { key: "B", text: "₦350,000" },
-      { key: "C", text: "₦150,000" },
-      { key: "D", text: "₦240,000" }
+      { key: "A", text: "₦350,000" },
+      { key: "B", text: "₦150,000" },
+      { key: "C", text: "₦240,000" },
+      { key: "D", text: "₦200,000" }
     ],
-    correctAnswer: "A",
+    correctAnswer: "D",
     explanation: "Working Capital = Total Current Assets - Total Current Liabilities.\nCurrent Assets = Inventory (₦180,000) + Receivables (₦120,000) + Bank (₦50,000) = ₦350,000.\nCurrent Liabilities = Payables (₦110,000) + Accrued Expenses (₦40,000) = ₦150,000.\nWorking Capital = ₦350,000 - ₦150,000 = ₦200,000."
   }
 ];
