@@ -49,9 +49,14 @@
   <link rel="stylesheet" href="css/mobile.css">
   <link rel="stylesheet" href="css/novel-hub.css">
   <link rel="stylesheet" href="css/features.css">
+  <link rel="stylesheet" href="css/paywall.css">
 </head>
 
 <body>
+  <!-- Paystack Inline JS SDK -->
+  <script src="https://js.paystack.co/v1/inline.js"></script>
+  <script>window.PAYSTACK_PUBLIC_KEY = 'pk_live_REPLACE_WITH_YOUR_KEY';</script>
+
   <!-- Header (hidden during auth, shown after login) -->
   <header class="app-header" id="app-header"></header>
 

@@ -10,7 +10,8 @@ const STORAGE_KEYS = {
   SETTINGS: "jamb_waec_settings",
   DAILY_CHALLENGE: "jamb_waec_daily_challenge",
   ACHIEVEMENTS: "jamb_waec_achievements",
-  STUDY_PLANNER: "jamb_waec_study_planner"
+  STUDY_PLANNER: "jamb_waec_study_planner",
+  PREMIUM: "cbt_master_premium_v1"
 };
 
 const DEFAULT_PROFILE = {
@@ -327,5 +328,37 @@ export const Storage = {
     const updated = { ...current, ...patch };
     localStorage.setItem(STORAGE_KEYS.STUDY_PLANNER, JSON.stringify(updated));
     return updated;
+  },
+
+  // ── Premium Access ────────────────────────────────────────────────────────
+  isPremiumActive() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.PREMIUM);
+      if (!raw) return false;
+      const data = JSON.parse(raw);
+      return data && data.active === true;
+    } catch {
+      return false;
+    }
+  },
+
+  setPremium({ reference, email }) {
+    const payload = {
+      active: true,
+      reference: reference || "manual",
+      email: email || "",
+      activatedAt: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEYS.PREMIUM, JSON.stringify(payload));
+    return payload;
+  },
+
+  getPremiumData() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.PREMIUM);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
   }
 };

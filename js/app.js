@@ -26,6 +26,7 @@ import { QuestionBrowser } from './question-browser.js';
 import { AnalyticsView } from './analytics-view.js';
 import { StudyPlanner } from './study-planner.js';
 import { ProfileView } from './profile-view.js';
+import { Paywall } from './paywall.js';
 
 class JambWaecApp {
   constructor() {
@@ -134,7 +135,10 @@ class JambWaecApp {
           <div class="user-chip" id="header-user-chip" title="View profile">
             <span class="chip-avatar">${profile.name.charAt(0).toUpperCase()}</span>
             <span class="chip-name">${profile.name.split(' ')[0]}</span>
-            <span class="chip-dept-dot" style="background: ${currentDept.color};"></span>
+            ${Storage.isPremiumActive() 
+              ? '<span class="pw-premium-chip">👑 Premium</span>' 
+              : '<span class="chip-dept-dot" style="background: ' + currentDept.color + ';"></span>'
+            }
           </div>
           <button class="icon-tool-btn mobile-menu-btn" id="mobile-menu-btn" title="Menu" aria-label="Open navigation menu">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -267,68 +271,82 @@ class JambWaecApp {
   }
 
   navigateToQuestionBrowser() {
-    this.currentView = "questions";
-    this.renderHeader();
-    const container = document.getElementById("main-app-container");
-    if (container) QuestionBrowser.renderBrowser(container);
+    Paywall.require(() => {
+      this.currentView = "questions";
+      this.renderHeader();
+      const container = document.getElementById("main-app-container");
+      if (container) QuestionBrowser.renderBrowser(container);
+    }, 'Question Bank Explorer');
   }
 
   navigateToCheatsheet() {
-    this.currentView = "cheatsheet";
-    this.renderHeader();
-    const container = document.getElementById("main-app-container");
-    if (container) Cheatsheet.renderCheatsheet(container);
+    Paywall.require(() => {
+      this.currentView = "cheatsheet";
+      this.renderHeader();
+      const container = document.getElementById("main-app-container");
+      if (container) Cheatsheet.renderCheatsheet(container);
+    }, 'Formula & Grammar Vault');
   }
 
   navigateToStudyPlanner() {
-    this.currentView = "planner";
-    this.renderHeader();
-    const container = document.getElementById("main-app-container");
-    if (container) StudyPlanner.renderPlanner(container);
+    Paywall.require(() => {
+      this.currentView = "planner";
+      this.renderHeader();
+      const container = document.getElementById("main-app-container");
+      if (container) StudyPlanner.renderPlanner(container);
+    }, 'Study Planner & Countdown');
   }
 
   navigateToSubjectAdvisor() {
-    this.currentView = "advisor";
-    this.renderHeader();
-    const container = document.getElementById("main-app-container");
-    if (container) SubjectAdvisor.renderAdvisor(container);
+    Paywall.require(() => {
+      this.currentView = "advisor";
+      this.renderHeader();
+      const container = document.getElementById("main-app-container");
+      if (container) SubjectAdvisor.renderAdvisor(container);
+    }, 'JAMB Course Guide');
   }
 
   navigateToAnalytics() {
-    this.currentView = "analytics";
-    this.renderHeader();
-    const container = document.getElementById("main-app-container");
-    if (container) AnalyticsView.renderAnalyticsPage(container);
+    Paywall.require(() => {
+      this.currentView = "analytics";
+      this.renderHeader();
+      const container = document.getElementById("main-app-container");
+      if (container) AnalyticsView.renderAnalyticsPage(container);
+    }, 'Diagnostic Intelligence Analytics');
   }
 
   navigateToAchievements() {
-    this.currentView = "badges";
-    this.renderHeader();
-    const container = document.getElementById("main-app-container");
-    if (container) Achievements.renderAchievementsPage(container);
+    Paywall.require(() => {
+      this.currentView = "badges";
+      this.renderHeader();
+      const container = document.getElementById("main-app-container");
+      if (container) Achievements.renderAchievementsPage(container);
+    }, 'Badges & Achievements');
   }
 
   navigateToNovelHub() {
-    this.currentView = "novel";
-    this.renderHeader();
-    NovelHub.render("main-app-container", {
-      onBack: () => this.navigateToDashboard(),
-      onStartQuiz: (questions, title) => {
-        if (!questions || questions.length === 0) {
-          alert("No questions available for this selection.");
-          return;
+    Paywall.require(() => {
+      this.currentView = "novel";
+      this.renderHeader();
+      NovelHub.render("main-app-container", {
+        onBack: () => this.navigateToDashboard(),
+        onStartQuiz: (questions, title) => {
+          if (!questions || questions.length === 0) {
+            alert("No questions available for this selection.");
+            return;
+          }
+          this.startExam({
+            examType: "JAMB",
+            title: `Novel Quiz: ${title}`,
+            department: "All Departments",
+            subjects: ["Compulsory Novel"],
+            questions: questions,
+            durationMinutes: Math.max(10, Math.ceil(questions.length * 1.5)),
+            mode: "study"
+          });
         }
-        this.startExam({
-          examType: "JAMB",
-          title: `Novel Quiz: ${title}`,
-          department: "All Departments",
-          subjects: ["Compulsory Novel"],
-          questions: questions,
-          durationMinutes: Math.max(10, Math.ceil(questions.length * 1.5)),
-          mode: "study"
-        });
-      }
-    });
+      });
+    }, 'The Life Changer Novel Hub');
   }
 
   /**
@@ -363,30 +381,34 @@ class JambWaecApp {
   }
 
   startJambExam(departmentName, mode = "cbt", customSubjects = null, questionsPerSubject = 10) {
-    const examData = createJambSimulation(departmentName, customSubjects, questionsPerSubject);
-    this.startExam({
-      examType: "JAMB",
-      title: examData.title,
-      department: departmentName,
-      subjects: examData.subjects,
-      questions: examData.questions,
-      durationMinutes: mode === "study" ? 180 : examData.durationMinutes,
-      mode: mode
-    });
+    Paywall.require(() => {
+      const examData = createJambSimulation(departmentName, customSubjects, questionsPerSubject);
+      this.startExam({
+        examType: "JAMB",
+        title: examData.title,
+        department: departmentName,
+        subjects: examData.subjects,
+        questions: examData.questions,
+        durationMinutes: mode === "study" ? 180 : examData.durationMinutes,
+        mode: mode
+      });
+    }, 'JAMB UTME Simulator');
   }
 
   startWaecExam(subject, mode = "cbt") {
-    const examData = createWaecExam(subject, 10);
-    const profile = Storage.getUserProfile();
-    this.startExam({
-      examType: "WAEC",
-      title: examData.title,
-      department: profile.department,
-      subjects: [subject],
-      questions: examData.questions,
-      durationMinutes: mode === "study" ? 120 : examData.durationMinutes,
-      mode: mode
-    });
+    Paywall.require(() => {
+      const examData = createWaecExam(subject, 10);
+      const profile = Storage.getUserProfile();
+      this.startExam({
+        examType: "WAEC",
+        title: examData.title,
+        department: profile.department,
+        subjects: [subject],
+        questions: examData.questions,
+        durationMinutes: mode === "study" ? 120 : examData.durationMinutes,
+        mode: mode
+      });
+    }, 'WAEC Practice Exam');
   }
 
   navigateToResult(resultData) {
@@ -404,77 +426,79 @@ class JambWaecApp {
   }
 
   navigateToBookmarks() {
-    this.currentView = "bookmarks";
-    this.renderHeader();
-    const container = document.getElementById("main-app-container");
-    if (!container) return;
+    Paywall.require(() => {
+      this.currentView = "bookmarks";
+      this.renderHeader();
+      const container = document.getElementById("main-app-container");
+      if (!container) return;
 
-    const bookmarkedIds = Storage.getBookmarks();
-    const savedQuestions = allQuestions.filter(q => bookmarkedIds.includes(q.id));
+      const bookmarkedIds = Storage.getBookmarks();
+      const savedQuestions = allQuestions.filter(q => bookmarkedIds.includes(q.id));
 
-    container.innerHTML = `
-      <div class="bookmarks-page">
-        <div class="bookmarks-header">
-          <div>
-            <h2>Saved Questions for Revision</h2>
-            <p>Review questions you've marked during your study sessions.</p>
+      container.innerHTML = `
+        <div class="bookmarks-page">
+          <div class="bookmarks-header">
+            <div>
+              <h2>Saved Questions for Revision</h2>
+              <p>Review questions you've marked during your study sessions.</p>
+            </div>
+            <button id="btn-back-from-bookmarks" class="btn-primary">&#8592; Back to Dashboard</button>
           </div>
-          <button id="btn-back-from-bookmarks" class="btn-primary">← Back to Dashboard</button>
+
+          ${savedQuestions.length === 0 ? `
+            <div class="empty-state">
+              <span class="empty-icon">⭐</span>
+              <h3>No Bookmarked Questions Yet</h3>
+              <p>While taking practice tests or exploring the question bank, click the <strong>Bookmark</strong> button on challenging questions to review them here anytime.</p>
+            </div>
+          ` : `
+            <div class="review-questions-list">
+              ${savedQuestions.map((q, idx) => `
+                <div class="review-question-card review-correct">
+                  <div class="review-q-header">
+                    <div class="q-meta-left">
+                      <span class="q-number-pill">Saved #${idx + 1}</span>
+                      <span class="q-tag">${q.exam} ${q.year}</span>
+                      <span class="q-tag tag-subject">${q.subject}</span>
+                    </div>
+                    <button class="btn-remove-bookmark" data-qid="${q.id}">Remove</button>
+                  </div>
+                  <div class="review-q-body">
+                    <div class="review-question-text">${q.question.replace(/\n/g, '<br>')}</div>
+                    <div class="review-options">
+                      ${q.options.map(opt => `
+                        <div class="review-opt-row ${opt.key === q.correctAnswer ? 'opt-correct-answer' : ''}">
+                          <div class="opt-bullet">${opt.key}</div>
+                          <div class="opt-text">${opt.text}</div>
+                          ${opt.key === q.correctAnswer ? '<span class="status-marker marker-correct">&#10003; Correct</span>' : ''}
+                        </div>
+                      `).join('')}
+                    </div>
+                    <div class="explanation-box">
+                      <div class="explanation-title">&#128218; Explanation:</div>
+                      <div class="explanation-content">${q.explanation.replace(/\n/g, '<br>')}</div>
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
         </div>
+      `;
 
-        ${savedQuestions.length === 0 ? `
-          <div class="empty-state">
-            <span class="empty-icon">⭐</span>
-            <h3>No Bookmarked Questions Yet</h3>
-            <p>While taking practice tests or exploring the question bank, click the <strong>Bookmark</strong> button on challenging questions to review them here anytime.</p>
-          </div>
-        ` : `
-          <div class="review-questions-list">
-            ${savedQuestions.map((q, idx) => `
-              <div class="review-question-card review-correct">
-                <div class="review-q-header">
-                  <div class="q-meta-left">
-                    <span class="q-number-pill">Saved #${idx + 1}</span>
-                    <span class="q-tag">${q.exam} ${q.year}</span>
-                    <span class="q-tag tag-subject">${q.subject}</span>
-                  </div>
-                  <button class="btn-remove-bookmark" data-qid="${q.id}">Remove</button>
-                </div>
-                <div class="review-q-body">
-                  <div class="review-question-text">${q.question.replace(/\n/g, '<br>')}</div>
-                  <div class="review-options">
-                    ${q.options.map(opt => `
-                      <div class="review-opt-row ${opt.key === q.correctAnswer ? 'opt-correct-answer' : ''}">
-                        <div class="opt-bullet">${opt.key}</div>
-                        <div class="opt-text">${opt.text}</div>
-                        ${opt.key === q.correctAnswer ? '<span class="status-marker marker-correct">✓ Correct</span>' : ''}
-                      </div>
-                    `).join('')}
-                  </div>
-                  <div class="explanation-box">
-                    <div class="explanation-title">📚 Explanation:</div>
-                    <div class="explanation-content">${q.explanation.replace(/\n/g, '<br>')}</div>
-                  </div>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        `}
-      </div>
-    `;
-
-    document.getElementById("btn-back-from-bookmarks")?.addEventListener("click", () => {
-      this.navigateToDashboard();
-    });
-
-    const removeBtns = container.querySelectorAll(".btn-remove-bookmark");
-    removeBtns.forEach(btn => {
-      btn.addEventListener("click", () => {
-        const qid = btn.dataset.qid;
-        Storage.toggleBookmark(qid);
-        this.navigateToBookmarks();
+      document.getElementById("btn-back-from-bookmarks")?.addEventListener("click", () => {
+        this.navigateToDashboard();
       });
-    });
+
+      const removeBtns = container.querySelectorAll(".btn-remove-bookmark");
+      removeBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const qid = btn.dataset.qid;
+          Storage.toggleBookmark(qid);
+          this.navigateToBookmarks();
+        });
+      });
+    }, 'Saved Questions');
   }
 
   bindGlobalEvents() {

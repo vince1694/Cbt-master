@@ -7,6 +7,7 @@ import { Storage } from './storage.js';
 import { DEPARTMENTS } from './questions/index.js';
 import { Icons } from './icons.js';
 import { DailyChallenge } from './daily-challenge.js';
+import { Paywall } from './paywall.js';
 
 export const Dashboard = {
   render(containerId, { onStartJamb, onStartWaec, onReviewTest, onOpenStudyMode, onOpenNovelStudy, onOpenProfile }) {
@@ -76,6 +77,20 @@ export const Dashboard = {
             <span>Official Examination Window Approaching • View Study Plan &amp; Syllabus Checklist →</span>
           </div>
         </section>
+
+        <!-- Premium Upgrade Banner (free users only) -->
+        ${!Storage.isPremiumActive() ? `
+          <div class="pw-upgrade-banner" id="pw-upgrade-banner-btn" style="cursor:pointer;">
+            <div class="pw-banner-text">
+              <span class="pw-banner-icon">👑</span>
+              <div class="pw-banner-copy">
+                <strong>Unlock All Premium Features</strong>
+                <span>Pay once &#8358;2,000 &bull; Competitors charge &#8358;4,000+ &bull; Lifetime access</span>
+              </div>
+            </div>
+            <button class="pw-banner-btn" id="pw-banner-upgrade-btn">Upgrade Now &#8594;</button>
+          </div>
+        ` : ''}
 
         <!-- Daily 10-Question Sprint Challenge Mount -->
         <section id="daily-challenge-mount"></section>
@@ -171,7 +186,7 @@ export const Dashboard = {
         <!-- Academic Super-Hub Navigation Grid -->
         <section class="superhub-section">
           <div class="superhub-grid">
-            <div class="hub-card hub-questions" id="hub-card-questions">
+            <div class="hub-card hub-questions ${!Storage.isPremiumActive() ? 'hub-locked' : ''}" id="hub-card-questions">
               <div class="hub-card-icon">📚</div>
               <div class="hub-card-text">
                 <h4>Question Bank Explorer</h4>
@@ -180,7 +195,7 @@ export const Dashboard = {
               <span class="hub-arrow">→</span>
             </div>
 
-            <div class="hub-card hub-formulas" id="hub-card-formulas">
+            <div class="hub-card hub-formulas ${!Storage.isPremiumActive() ? 'hub-locked' : ''}" id="hub-card-formulas">
               <div class="hub-card-icon">📐</div>
               <div class="hub-card-text">
                 <h4>Formula &amp; Grammar Vault</h4>
@@ -189,7 +204,7 @@ export const Dashboard = {
               <span class="hub-arrow">→</span>
             </div>
 
-            <div class="hub-card hub-advisor" id="hub-card-advisor">
+            <div class="hub-card hub-advisor ${!Storage.isPremiumActive() ? 'hub-locked' : ''}" id="hub-card-advisor">
               <div class="hub-card-icon">🏛️</div>
               <div class="hub-card-text">
                 <h4>JAMB Course Guide</h4>
@@ -198,7 +213,7 @@ export const Dashboard = {
               <span class="hub-arrow">→</span>
             </div>
 
-            <div class="hub-card hub-analytics" id="hub-card-analytics">
+            <div class="hub-card hub-analytics ${!Storage.isPremiumActive() ? 'hub-locked' : ''}" id="hub-card-analytics">
               <div class="hub-card-icon">📊</div>
               <div class="hub-card-text">
                 <h4>Diagnostic Intelligence</h4>
@@ -405,6 +420,15 @@ export const Dashboard = {
     if (dcMount) {
       DailyChallenge.renderChallengeCard(dcMount);
     }
+
+    // Premium upgrade banner clicks
+    document.getElementById("pw-upgrade-banner-btn")?.addEventListener("click", () => {
+      Paywall.showModal(null, 'CBT Master Premium');
+    });
+    document.getElementById("pw-banner-upgrade-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      Paywall.showModal(null, 'CBT Master Premium');
+    });
 
     // Exam status countdown click
     document.getElementById("exam-status-bar-btn")?.addEventListener("click", () => {
