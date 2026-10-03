@@ -530,29 +530,51 @@ app.get('/api/leaderboard', async (req, res) => {
 });
 
 // ========================================================
-// 3. Server Initialization & MongoDB Connection
+// 3. Server Initialization & MongoDB Connection (Serverless-Ready)
 // ========================================================
-const startServer = async () => {
-  const mongoUri = process.env.MONGODB_URI;
+let cachedDb = null;
 
-  if (!mongoUri || mongoUri.includes('YOUR_MONGODB_URI') || mongoUri.includes('<username>')) {
-    console.log('\n=============================================================');
-    console.log('⚠️  MONGODB_URI NOT YET CONFIGURED IN server/.env');
-    console.log('👉 Follow the setup guide to get your free MongoDB Atlas URL.');
-    console.log('=============================================================\n');
-  } else {
-    try {
-      console.log('⏳ Connecting to MongoDB Atlas cluster...');
-      await mongoose.connect(mongoUri);
-      console.log('✅ Connected successfully to MongoDB Atlas Cluster!');
-    } catch (err) {
-      console.error('❌ MongoDB Atlas connection error:', err.message);
-    }
+export const connectToDatabase = async () => {
+  if (cachedDb && mongoose.connection.readyState === 1) {
+    return cachedDb;
   }
-
-  app.listen(PORT, () => {
-    console.log(`🚀 CBT Master API server running at http://localhost:${PORT}`);
-  });
+  const mongoUri = process.env.MONGODB_URI;
+  if (!mongoUri || mongoUri.includes('YOUR_MONGODB_URI') || mongoUri.includes('<username>')) {
+    console.warn('⚠️ MONGODB_URI not configured.');
+    return null;
+  }
+  try {
+    console.log('⏳ Connecting to MongoDB Atlas cluster...');
+    cachedDb = await mongoose.connect(mongoUri, { bufferCommands: false });
+    console.log('✅ Connected successfully to MongoDB Atlas Cluster!');
+    return cachedDb;
+  } catch (err) {
+    console.error('❌ MongoDB Atlas connection error:', err.message);
+    throw err;
+  }
 };
 
-startServer();
+// Middleware: ensure database connection is ready for incoming requests
+app.use(async (req, res, next) => {
+  try {
+    await connectToDatabase();
+  } catch (err) {
+    console.error('Database connection error in request:', err.message);
+  }
+  next();
+});
+
+// Standalone execution (Local development)
+if (!process.env.VERCEL) {
+  connectToDatabase().then(() => {
+    app.listen(PORT, () => {
+      console.log(`🚀 CBT Master API server running at http://localhost:${PORT}`);
+    });
+  }).catch(() => {
+    app.listen(PORT, () => {
+      console.log(`🚀 CBT Master API server running at http://localhost:${PORT} (offline DB)`);
+    });
+  });
+}
+
+export default app;
