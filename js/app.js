@@ -487,8 +487,7 @@ class JambWaecApp {
   }
 }
 
-// Bootstrap application on DOM ready
-document.addEventListener("DOMContentLoaded", () => {
+function bootstrapApp() {
   const app = new JambWaecApp();
   try {
     app.init();
@@ -505,4 +504,10 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>`;
     }
   }
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootstrapApp);
+} else {
+  bootstrapApp();
+}
