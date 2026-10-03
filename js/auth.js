@@ -32,7 +32,24 @@ export const Auth = {
     try {
       const session = JSON.parse(localStorage.getItem(AUTH_KEYS.SESSION));
       const users = this._getUsers();
-      return users.find(u => u.id === session.userId) || null;
+      const user = users.find(u => u.id === session.userId);
+      if (user) return user;
+
+      // Fallback: construct user from stored profile and email if available
+      const savedProfile = JSON.parse(localStorage.getItem("jamb_waec_user_profile") || "null");
+      if (savedProfile) {
+        return {
+          id: session.userId,
+          name: savedProfile.name || localStorage.getItem('cbt_user_name') || 'Candidate',
+          email: localStorage.getItem('cbt_user_email') || '',
+          department: savedProfile.department || 'Science',
+          targetJambScore: savedProfile.targetJambScore || 280,
+          targetInstitution: savedProfile.targetInstitution || 'University of Lagos (UNILAG)',
+          preferredCourse: savedProfile.preferredCourse || 'Computer Science',
+          streakDays: savedProfile.streakDays || 1
+        };
+      }
+      return null;
     } catch {
       return null;
     }
@@ -41,6 +58,9 @@ export const Auth = {
   logout() {
     localStorage.removeItem(AUTH_KEYS.SESSION);
     localStorage.removeItem(AUTH_KEYS.CURRENT_USER);
+    localStorage.removeItem('cbt_auth_token');
+    localStorage.removeItem('cbt_user_email');
+    localStorage.removeItem('cbt_user_name');
   },
 
   // ─── User Database ───────────────────────────────────────────────
@@ -152,5 +172,35 @@ export const Auth = {
     users[idx] = { ...users[idx], ...updates };
     this._saveUsers(users);
     this._syncProfileToStorage(users[idx]);
+  },
+
+  // Synchronize a cloud-authenticated user into local offline cache
+  syncUserFromCloud(userData, userId) {
+    if (!userData) return;
+    const users = this._getUsers();
+    const email = (userData.email || '').trim().toLowerCase();
+    const id = userId || userData.id || userData._id || ('user_' + Date.now());
+    const existingIdx = users.findIndex(u => (email && u.email && u.email.toLowerCase() === email) || u.id === id);
+
+    const record = {
+      id,
+      name: userData.name || 'Candidate',
+      email,
+      department: userData.department || 'Science',
+      targetJambScore: userData.targetJambScore || 280,
+      targetInstitution: userData.targetInstitution || 'University of Lagos (UNILAG)',
+      preferredCourse: userData.preferredCourse || 'Computer Science',
+      streakDays: userData.streakDays || 1,
+      lastStudyDate: userData.lastStudyDate || null,
+      totalTimeMinutes: userData.totalTimeMinutes || 0,
+      joinedAt: userData.createdAt || new Date().toISOString()
+    };
+
+    if (existingIdx !== -1) {
+      users[existingIdx] = { ...users[existingIdx], ...record };
+    } else {
+      users.push(record);
+    }
+    this._saveUsers(users);
   }
 };

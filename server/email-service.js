@@ -11,16 +11,32 @@
  */
 
 import { createRequire } from 'module';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 const require = createRequire(import.meta.url);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, '..');
+
 const dotenv = require('dotenv');
-dotenv.config(); // ensure .env is loaded even when imported before server.js calls it
+// Multi-candidate .env loading
+try {
+  dotenv.config({ path: path.join(rootDir, '.env') });
+  dotenv.config({ path: path.join(__dirname, '.env') });
+  dotenv.config({ path: path.join(rootDir, 'server', '.env') });
+  dotenv.config();
+} catch (e) {
+  // Ignore in serverless environments without fs access
+}
+
 const { BrevoClient } = require('@getbrevo/brevo');
 
 // ── Brevo Client (lazy — reads env at call time) ──────────────────────────────
 let _brevo = null;
 function getBrevo() {
   if (!_brevo) {
-    const key = process.env.BREVO_API_KEY;
+    const key = (process.env.BREVO_API_KEY || '').trim();
     if (!key) throw new Error('BREVO_API_KEY is not set in environment.');
     _brevo = new BrevoClient({ apiKey: key });
   }
@@ -278,13 +294,17 @@ function otpHtml({ name, otp, isResend }) {
 
 async function sendEmail({ to, name, subject, html }) {
   try {
-    const res = await getBrevo().transactionalEmails.sendTransacEmail({
+    const brevoPromise = getBrevo().transactionalEmails.sendTransacEmail({
       sender: getSender(),
       to: [{ email: to, name }],
       subject,
       htmlContent: html
     });
-    // v2 SDK returns data directly (not wrapped in .body)
+    // 8-second timeout to prevent serverless function hangs
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Brevo email API request timed out (8s limit)')), 8000)
+    );
+    const res = await Promise.race([brevoPromise, timeoutPromise]);
     const messageId = res?.messageId || res?.body?.messageId || 'sent';
     console.log(`📧 Email sent → ${to} | "${subject}"`);
     return { success: true, messageId };

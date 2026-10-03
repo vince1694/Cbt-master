@@ -44,7 +44,7 @@ export const Api = {
       const res = await fetch(`${API_BASE}/health`, {
         method: 'GET',
         headers: { 'Accept': 'application/json' },
-        signal: AbortSignal.timeout(3000) // 3s timeout
+        signal: AbortSignal.timeout(6000) // 6s timeout allows serverless functions to warm up
       });
       if (res.ok) {
         this.isOnline = true;

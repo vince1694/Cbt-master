@@ -1,9 +1,16 @@
 /**
- * Paywall — Premium Access Gate
- * Shows a stunning upgrade modal and processes payment via Paystack.
- * On success it calls Storage.setPremium() to unlock all features.
+ * Paywall — Premium Access Gate (powered by Credo)
+ * Shows a premium upgrade modal and processes payment via Credo inline widget.
+ * On success calls Storage.setPremium() to unlock all features permanently.
+ *
+ * Key info:
+ *  - Frontend uses PUBLIC key only (window.CREDO_PUBLIC_KEY set in index.html)
+ *  - Secret key lives ONLY on the server (server/.env) for webhook verification
+ *  - Credo amounts are in Kobo (smallest unit): NGN 2,000 = 200000 kobo
  */
 import { Storage } from './storage.js';
+
+const PREMIUM_AMOUNT_KOBO = 200000;  // NGN 2,000
 
 const PREMIUM_FEATURES = [
   { icon: '🎯', title: 'Unlimited JAMB & WAEC Simulations', desc: 'Full mock exams with real-time timer & scoring' },
@@ -17,14 +24,23 @@ const PREMIUM_FEATURES = [
 ];
 
 function getUserEmail() {
-  try { return (localStorage.getItem('cbt_user_email') || '').trim(); } catch { return ''; }
+  try {
+    return (localStorage.getItem('cbt_user_email') || Storage.getUserProfile().email || '').trim();
+  } catch {
+    return '';
+  }
 }
 function getUserName() {
   try { return Storage.getUserProfile().name || 'Candidate'; } catch { return 'Candidate'; }
 }
+function generateRef() {
+  return 'CBTM_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6).toUpperCase();
+}
 
 export const Paywall = {
-  isActive() { return Storage.isPremiumActive(); },
+  isActive() {
+    return Storage.isPremiumActive();
+  },
 
   require(onGranted, featureName = 'this feature') {
     if (this.isActive()) { onGranted(); return; }
@@ -42,16 +58,18 @@ export const Paywall = {
     backdrop.innerHTML = `
       <div class="pw-modal" id="pw-modal-card">
         <button class="pw-close-btn" id="pw-close-btn" aria-label="Close">&times;</button>
+
         <div class="pw-header">
-          <div class="pw-crown">👑</div>
+          <div class="pw-crown">&#128081;</div>
           <div class="pw-header-text">
             <h2 class="pw-title">Unlock Full Premium Access</h2>
             <p class="pw-subtitle">
               <strong>${featureName}</strong> is a premium feature.
-              Get <strong>lifetime access</strong> to everything CBT Master offers.
+              Get <strong>lifetime access</strong> to everything CBT Master offers for a one-time payment.
             </p>
           </div>
         </div>
+
         <div class="pw-price-row">
           <div class="pw-price-badge">
             <span class="pw-price-amount">&#8358;2,000</span>
@@ -62,6 +80,7 @@ export const Paywall = {
             <span class="pw-saving">&#10003; You save 50%</span>
           </div>
         </div>
+
         <ul class="pw-features-list" id="pw-features-list">
           ${PREMIUM_FEATURES.map(f => `
             <li class="pw-feature-item">
@@ -73,16 +92,18 @@ export const Paywall = {
             </li>
           `).join('')}
         </ul>
+
         <div class="pw-cta-section">
           <button class="pw-pay-btn" id="pw-pay-btn">
             <span class="pw-pay-icon">&#128275;</span>
             <span>Pay &#8358;2,000 &amp; Unlock Now</span>
           </button>
           <p class="pw-security-note">
-            &#128274; Secured by Paystack &nbsp;&bull;&nbsp; Card, bank transfer &amp; USSD accepted
+            &#128274; Secured by Credo &nbsp;&bull;&nbsp; Card, bank transfer &amp; USSD accepted
           </p>
           <button class="pw-later-btn" id="pw-later-btn">Maybe later</button>
         </div>
+
         <div class="pw-loading-overlay hidden" id="pw-loading-overlay">
           <div class="pw-spinner"></div>
           <p>Opening secure payment&hellip;</p>
@@ -105,11 +126,11 @@ export const Paywall = {
     document.addEventListener('keydown', esc);
 
     document.getElementById('pw-pay-btn').addEventListener('click', () => {
-      this._initiatePaystack({ onGranted, closeModal });
+      this._initiateCredo({ onGranted, closeModal });
     });
   },
 
-  _initiatePaystack({ onGranted, closeModal }) {
+  _initiateCredo({ onGranted, closeModal }) {
     const email = getUserEmail();
     const name  = getUserName();
     const loadingEl = document.getElementById('pw-loading-overlay');
@@ -118,60 +139,77 @@ export const Paywall = {
       alert('Could not find your email. Please log out and log back in, then try again.');
       return;
     }
+
     if (loadingEl) loadingEl.classList.remove('hidden');
 
-    if (typeof window.PaystackPop === 'undefined') {
+    // Check Credo widget is loaded
+    if (typeof window.CredoWidget === 'undefined') {
       if (loadingEl) loadingEl.classList.add('hidden');
-      this._showPaymentFallback({ onGranted, closeModal });
+      this._showPaymentFallback({ closeModal });
+      return;
+    }
+
+    const publicKey = window.CREDO_PUBLIC_KEY;
+    if (!publicKey || publicKey.includes('REPLACE')) {
+      if (loadingEl) loadingEl.classList.add('hidden');
+      console.warn('[Paywall] Credo public key not set. Update window.CREDO_PUBLIC_KEY in index.html.');
+      this._showPaymentFallback({ closeModal });
       return;
     }
 
     try {
-      const handler = window.PaystackPop.setup({
-        key: window.PAYSTACK_PUBLIC_KEY || 'pk_live_REPLACE_WITH_YOUR_KEY',
-        email,
-        amount: 200000,
+      const handler = window.CredoWidget.setup({
+        key: publicKey,           // Public key (1PUB... for live, 0PUB... for sandbox)
+        email: email,
+        amount: PREMIUM_AMOUNT_KOBO,   // Amount in kobo (200000 = NGN 2,000)
         currency: 'NGN',
-        ref: 'CBTM_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+        reference: generateRef(),
+        channels: ['CARD', 'BANK_TRANSFER', 'USSD'],
         metadata: {
-          custom_fields: [
-            { display_name: 'Customer Name', variable_name: 'customer_name', value: name },
-            { display_name: 'Platform', variable_name: 'platform', value: 'CBT Master' }
-          ]
+          customerName: name,
+          platform: 'CBT Master',
+          product: 'Premium Access (Lifetime)'
         },
-        callback: (response) => {
+        // callBack fires when the user finishes interaction
+        callBack: (response) => {
           if (loadingEl) loadingEl.classList.add('hidden');
-          if (response && response.reference) {
-            Storage.setPremium({ reference: response.reference, email });
+          // response.status will be 'success' on completion
+          if (response && (response.status === 'success' || response.status === 'PAID')) {
+            Storage.setPremium({ reference: response.reference || response.transactionRef, email });
             closeModal();
             this._showSuccessToast();
             if (onGranted) setTimeout(onGranted, 700);
+          } else {
+            // Payment abandoned or failed — just close loading
+            console.warn('[Paywall] Credo payment not completed:', response);
           }
         },
         onClose: () => {
           if (loadingEl) loadingEl.classList.add('hidden');
         }
       });
+
       handler.openIframe();
     } catch (err) {
       if (loadingEl) loadingEl.classList.add('hidden');
-      console.error('[Paywall] Paystack error:', err);
-      this._showPaymentFallback({ onGranted, closeModal });
+      console.error('[Paywall] Credo widget error:', err);
+      this._showPaymentFallback({ closeModal });
     }
   },
 
-  _showPaymentFallback({ onGranted, closeModal }) {
+  _showPaymentFallback({ closeModal }) {
     const section = document.querySelector('.pw-cta-section');
     if (!section) return;
-    document.getElementById('pw-features-list').style.display = 'none';
+    const featureList = document.getElementById('pw-features-list');
+    if (featureList) featureList.style.display = 'none';
+
     section.innerHTML = `
       <div class="pw-fallback-box">
-        <h3>&#128179; Alternative Payment</h3>
-        <p>Paystack could not load. Use one of these options:</p>
+        <h3>&#128179; Pay via Bank Transfer</h3>
+        <p>Our secure checkout could not load. Use any option below and we will activate your account:</p>
         <div class="pw-alt-option">
           <strong>Bank Transfer</strong>
-          <span>Bank: <em>GTBank</em></span>
-          <span>Account: <code>0123456789</code> — CBT Master Platform</span>
+          <span>Bank: <em>Contact us for bank details</em></span>
           <span>Amount: <strong>&#8358;2,000</strong></span>
         </div>
         <div class="pw-alt-option">
@@ -194,6 +232,6 @@ export const Paywall = {
     `;
     document.body.appendChild(t);
     requestAnimationFrame(() => t.classList.add('pw-toast-visible'));
-    setTimeout(() => { t.classList.remove('pw-toast-visible'); setTimeout(() => t.remove(), 400); }, 4000);
+    setTimeout(() => { t.classList.remove('pw-toast-visible'); setTimeout(() => t.remove(), 400); }, 4500);
   }
 };

@@ -341,67 +341,84 @@ export const AuthView = {
     this._setLoading('login-submit-btn', true);
 
     try {
-      // Try cloud login first
-      const serverOnline = await Api.checkServerHealth();
-      let result;
+      // 1. Direct cloud authentication request (no slow pre-flight ping)
+      const res = await fetch(`${Api._base()}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.toLowerCase(), password }),
+        signal: AbortSignal.timeout(10000) // 10s generous timeout
+      });
 
-      if (serverOnline) {
-        const res = await fetch(`${Api._base()}/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-        const data = await res.json();
-        if (res.status === 403 && data.requiresOtp) {
-          // Unverified — redirect to OTP screen
-          this._setLoading('login-submit-btn', false);
-          this._showOtpScreen(data.email || email, '', onAuthSuccess);
-          return;
-        } else if (res.ok && data.token) {
-          localStorage.setItem('cbt_auth_token', data.token);
-          localStorage.setItem('cbt_user_email', email);
-          if (data.user && data.user.name) {
-            localStorage.setItem('cbt_user_name', data.user.name);
-          }
-          const userId = (data.user && (data.user.id || data.user._id)) || 'cloud_' + Date.now();
-          localStorage.setItem('cbtmaster_session', JSON.stringify({
-            userId,
-            createdAt: Date.now(),
-            expiry: Date.now() + (30 * 24 * 60 * 60 * 1000)
-          }));
-          if (data.user) {
-            Storage.updateUserProfile({
-              name: data.user.name || 'Candidate',
-              email: data.user.email || email,
-              department: data.user.department || 'Science',
-              targetJambScore: data.user.targetJambScore || 280,
-              targetInstitution: data.user.targetInstitution || 'University of Lagos (UNILAG)',
-              preferredCourse: data.user.preferredCourse || 'Computer Science'
-            });
-          }
-          result = { success: true, user: data.user };
-        } else {
-          result = { success: false, error: data.error || 'Invalid email or password.' };
+      const data = await res.json().catch(() => ({}));
+
+      // Account registered but not yet verified -> smoothly send to OTP screen
+      if (res.status === 403 && data.requiresOtp) {
+        this._setLoading('login-submit-btn', false);
+        this._showOtpScreen(data.email || email, '', onAuthSuccess);
+        return;
+      }
+
+      // Successful cloud authentication
+      if (res.ok && data.token) {
+        localStorage.setItem('cbt_auth_token', data.token);
+        localStorage.setItem('cbt_user_email', email.toLowerCase());
+        if (data.user && data.user.name) {
+          localStorage.setItem('cbt_user_name', data.user.name);
         }
-      } else {
-        // Offline fallback
-        result = Auth.login({ email, password });
+        const userId = (data.user && (data.user.id || data.user._id)) || 'cloud_' + Date.now();
+        localStorage.setItem('cbtmaster_session', JSON.stringify({
+          userId,
+          createdAt: Date.now(),
+          expiry: Date.now() + (30 * 24 * 60 * 60 * 1000)
+        }));
+
+        // Synchronize cloud user into local offline store
+        Auth.syncUserFromCloud(data.user, userId);
+
+        if (data.user) {
+          Storage.updateUserProfile({
+            name: data.user.name || 'Candidate',
+            email: data.user.email || email,
+            department: data.user.department || 'Science',
+            targetJambScore: data.user.targetJambScore || 280,
+            targetInstitution: data.user.targetInstitution || 'University of Lagos (UNILAG)',
+            preferredCourse: data.user.preferredCourse || 'Computer Science'
+          });
+        }
+
+        this._setLoading('login-submit-btn', false);
+        this._animateSuccess(() => onAuthSuccess(data.user));
+        return;
       }
 
-      this._setLoading('login-submit-btn', false);
-      if (result.success) {
-        this._animateSuccess(() => onAuthSuccess(result.user));
-      } else {
-        this._showError('login-error-box', result.error);
+      // Credentials mismatch or user not found on cloud
+      if (res.status === 401 || res.status === 400) {
+        // Fallback: check local offline storage
+        const localResult = Auth.login({ email, password });
+        if (localResult.success) {
+          this._setLoading('login-submit-btn', false);
+          this._animateSuccess(() => onAuthSuccess(localResult.user));
+          return;
+        }
+
+        this._setLoading('login-submit-btn', false);
+        this._showError('login-error-box', data.error || 'Invalid email address or password.');
+        return;
       }
+
+      // Other HTTP errors (e.g. 500)
+      throw new Error(data.error || 'Login service unavailable. Please try again.');
+
     } catch (err) {
+      console.warn('[Auth] Cloud login network failure, trying offline cache:', err);
+      // Offline fallback: check local storage database
+      const localResult = Auth.login({ email, password });
       this._setLoading('login-submit-btn', false);
-      // Network error — try local
-      const result = Auth.login({ email, password });
-      if (result.success) {
-        this._animateSuccess(() => onAuthSuccess(result.user));
+
+      if (localResult.success) {
+        this._animateSuccess(() => onAuthSuccess(localResult.user));
       } else {
-        this._showError('login-error-box', result.error || 'Login failed. Check your connection.');
+        this._showError('login-error-box', localResult.error || 'Unable to connect to server. Please check your internet connection.');
       }
     }
   },
@@ -428,51 +445,49 @@ export const AuthView = {
     this._setLoading('signup-submit-btn', true);
 
     try {
-      const serverOnline = await Api.checkServerHealth();
-      let result;
+      // Direct registration call with 15s timeout for email dispatch
+      const res = await fetch(`${Api._base()}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          email: email.toLowerCase(),
+          password,
+          department,
+          targetJambScore: targetScore,
+          targetInstitution,
+          preferredCourse
+        }),
+        signal: AbortSignal.timeout(15000)
+      });
 
-      if (serverOnline) {
-        const res = await fetch(`${Api._base()}/auth/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, password, department, targetJambScore: targetScore, targetInstitution, preferredCourse })
-        });
-        const data = await res.json();
-
-        if (res.ok && data.requiresOtp) {
-          // OTP flow — show verification screen
-          this._setLoading('signup-submit-btn', false);
-          this._showOtpScreen(email, name, onAuthSuccess);
-          return;
-        } else if (res.ok && data.token) {
-          // Direct token (fallback)
-          localStorage.setItem('cbt_auth_token', data.token);
-          localStorage.setItem('cbt_user_email', email);
-          Auth.signup({ name, email, password, department, targetScore, targetInstitution, preferredCourse });
-          result = { success: true, user: data.user || { name, email, department } };
-        } else {
-          result = { success: false, error: data.error || 'Registration failed.' };
-        }
-
-      } else {
-        // Offline fallback to local storage
-        result = Auth.signup({ name, email, password, department, targetScore, targetInstitution, preferredCourse });
-      }
-
+      const data = await res.json().catch(() => ({}));
       this._setLoading('signup-submit-btn', false);
-      if (result.success) {
-        this._animateSuccess(() => onAuthSuccess(result.user));
+
+      if (res.ok && data.requiresOtp) {
+        // OTP code generated and dispatched -> render verification screen
+        this._showOtpScreen(email.toLowerCase(), name, onAuthSuccess);
+        return;
+      } else if (res.ok && data.token) {
+        // Direct authentication fallback
+        localStorage.setItem('cbt_auth_token', data.token);
+        localStorage.setItem('cbt_user_email', email.toLowerCase());
+        const user = data.user || { name, email, department };
+        Auth.syncUserFromCloud(user, user.id || 'cloud_' + Date.now());
+        this._animateSuccess(() => onAuthSuccess(user));
+        return;
+      } else if (res.status === 409) {
+        this._showError('signup-error-box', 'An account with this email address already exists. Please sign in instead.');
+        return;
       } else {
-        this._showError('signup-error-box', result.error);
+        this._showError('signup-error-box', data.error || 'Registration failed. Please try again.');
+        return;
       }
+
     } catch (err) {
       this._setLoading('signup-submit-btn', false);
-      const result = Auth.signup({ name, email, password, department, targetScore, targetInstitution, preferredCourse });
-      if (result.success) {
-        this._animateSuccess(() => onAuthSuccess(result.user));
-      } else {
-        this._showError('signup-error-box', result.error || 'Signup failed. Check your connection.');
-      }
+      console.error('[Auth] Registration network error:', err);
+      this._showError('signup-error-box', 'Could not reach server to send verification code. Please check your internet connection.');
     }
   },
 
@@ -586,6 +601,10 @@ export const AuthView = {
             createdAt: Date.now(),
             expiry: Date.now() + (30 * 24 * 60 * 60 * 1000)
           }));
+
+          // Synchronize cloud user into local offline store
+          Auth.syncUserFromCloud(data.user || { name, email }, userId);
+
           if (data.user) {
             Storage.updateUserProfile({
               name: data.user.name || name || 'Candidate',
