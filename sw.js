@@ -3,7 +3,7 @@
  * Caches core app shell, CSS, JavaScript, and Past Questions
  * so candidates can practice seamlessly without internet connection.
  */
-const CACHE_NAME = 'cbt-master-v1';
+const CACHE_NAME = 'cbt-master-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -46,7 +46,12 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
+      // Cache assets individually — if any one fails (404 etc.), skip it
+      return Promise.allSettled(
+        ASSETS_TO_CACHE.map(url =>
+          cache.add(url).catch(err => console.warn('[SW] Failed to cache:', url, err.message))
+        )
+      );
     }).then(() => self.skipWaiting())
   );
 });

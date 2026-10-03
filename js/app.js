@@ -490,5 +490,19 @@ class JambWaecApp {
 // Bootstrap application on DOM ready
 document.addEventListener("DOMContentLoaded", () => {
   const app = new JambWaecApp();
-  app.init();
+  try {
+    app.init();
+  } catch (err) {
+    console.error('[CBT Master] Fatal init error:', err);
+    const loading = document.getElementById('app-loading');
+    if (loading) {
+      loading.innerHTML = `
+        <div style="text-align:center;padding:2rem;">
+          <div style="font-size:2rem;margin-bottom:1rem;">⚠️</div>
+          <p style="color:#f87171;margin-bottom:0.5rem;font-weight:600;">App failed to load</p>
+          <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:1.5rem;">${err.message}</p>
+          <button onclick="location.reload()" style="background:#10b981;color:#fff;border:none;padding:0.6rem 1.5rem;border-radius:8px;cursor:pointer;font-size:0.9rem;">Reload</button>
+        </div>`;
+    }
+  }
 });
