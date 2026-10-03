@@ -27,7 +27,10 @@ const JWT_SECRET = process.env.JWT_SECRET || 'cbt_master_secret_key_2025';
 // Middlewares
 app.use(cors());
 app.use(express.json());
-app.use(express.static(rootDir));
+// Only serve static files in local dev — on Vercel, the CDN handles them
+if (!process.env.VERCEL) {
+  app.use(express.static(rootDir));
+}
 
 // ========================================================
 // 1. Mongoose Database Models
@@ -571,13 +574,16 @@ app.use(async (req, res, next) => {
   next();
 });
 
-// SPA Fallback: serve index.html for root or any frontend route
-app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/api')) {
-    return next();
-  }
-  res.sendFile(path.join(rootDir, 'index.html'));
-});
+// SPA Fallback: serve index.html for root or any frontend route (local dev only)
+// On Vercel, the vercel.json routes catch-all handles this via CDN
+if (!process.env.VERCEL) {
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+    res.sendFile(path.join(rootDir, 'index.html'));
+  });
+}
 
 // Standalone execution (Local development)
 if (!process.env.VERCEL) {
