@@ -30,7 +30,8 @@ function getBrevo() {
 function getSender() {
   return {
     name: process.env.EMAIL_SENDER_NAME || 'CBT Master',
-    email: process.env.EMAIL_SENDER_ADDRESS || 'ifeanyichukwubethel2@gmail.com'
+    // Must match a verified sender in Brevo account (2bethel4u@gmail.com)
+    email: process.env.EMAIL_SENDER_ADDRESS || '2bethel4u@gmail.com'
   };
 }
 
