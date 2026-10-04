@@ -4,6 +4,7 @@
  */
 import { Auth } from './auth.js';
 import { Api } from './api.js';
+import { Storage } from './storage.js';
 
 export const AuthView = {
 

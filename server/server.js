@@ -174,6 +174,7 @@ app.get('/api/health', async (req, res) => {
     status: 'ok',
     message: 'CBT Master Backend API is online.',
     database: dbStatus,
+    build: 'v2.1.0-otp',
     timestamp: new Date().toISOString()
   });
 });
