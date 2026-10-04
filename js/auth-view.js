@@ -472,20 +472,58 @@ export const AuthView = {
     }
   },
 
+  _switchToLoginWithSuccess(email, message) {
+    const loginSection = document.getElementById("login-section");
+    const signupSection = document.getElementById("signup-section");
+    const formCard = document.getElementById("auth-form-card");
+
+    if (signupSection && loginSection) {
+      signupSection.classList.add("hidden");
+      loginSection.classList.remove("hidden");
+      formCard?.classList.remove("signup-mode");
+    }
+
+    const emailInput = document.getElementById('login-email');
+    if (emailInput && email) {
+      emailInput.value = email;
+    }
+
+    const pwInput = document.getElementById('login-password');
+    if (pwInput) {
+      pwInput.value = '';
+      setTimeout(() => pwInput.focus(), 250);
+    }
+
+    const successBox = document.getElementById('login-success-box');
+    if (successBox) {
+      successBox.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
+          <span style="font-size:1.4rem;">🎉</span>
+          <div style="text-align:left;">
+            <strong>${message || 'Account created successfully!'}</strong><br>
+            <span style="font-size:0.86rem;opacity:0.95;">Please enter your password below to sign in to your dashboard.</span>
+          </div>
+        </div>
+      `;
+      successBox.classList.remove('hidden');
+    }
+  },
+
   async _handleSignup(onAuthSuccess) {
     this._hideError('signup-error-box');
     const name = document.getElementById('signup-name')?.value.trim();
     const email = document.getElementById('signup-email')?.value.trim();
     const password = document.getElementById('signup-password')?.value;
-    const department = document.getElementById('signup-dept')?.value;
-    const targetScore = parseInt(document.getElementById('signup-target-score')?.value) || 280;
-    const targetInstitution = document.getElementById('signup-institution')?.value.trim();
-    const preferredCourse = document.getElementById('signup-course')?.value.trim();
+    const department = document.getElementById('signup-dept')?.value || 'Science';
+    const targetScore = parseInt(document.getElementById('signup-target-score')?.value, 10) || 280;
+    const targetInstitution = document.getElementById('signup-institution')?.value.trim() || 'University of Lagos (UNILAG)';
+    const preferredCourse = document.getElementById('signup-course')?.value.trim() || 'Computer Science';
 
     if (!name || !email || !password) {
-      this._showError('signup-error-box', 'Please fill in your name, email, and password.');
+      this._showError('signup-error-box', 'Please complete all required fields.');
       return;
     }
+
     if (password.length < 6) {
       this._showError('signup-error-box', 'Password must be at least 6 characters.');
       return;
@@ -493,24 +531,7 @@ export const AuthView = {
 
     this._setLoading('signup-submit-btn', true);
 
-    // Progressive loading hint for slow serverless cold starts
-    let signupHintTimer = setTimeout(() => {
-      const existingHint = document.getElementById('signup-warmup-hint');
-      if (!existingHint) {
-        const hint = document.createElement('div');
-        hint.id = 'signup-warmup-hint';
-        hint.style.cssText = 'text-align:center;color:rgba(255,255,255,0.5);font-size:0.8rem;margin-top:8px;';
-        hint.textContent = '⏳ Sending your verification code, please wait…';
-        document.getElementById('signup-submit-btn')?.parentNode?.appendChild(hint);
-      }
-    }, 4000);
-    const _cleanupSignupHint = () => {
-      clearTimeout(signupHintTimer);
-      document.getElementById('signup-warmup-hint')?.remove();
-    };
-
     try {
-      // Extended timeout: 25s for cold starts + email dispatch
       const res = await fetch(`${Api._base()}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -523,24 +544,19 @@ export const AuthView = {
           targetInstitution,
           preferredCourse
         }),
-        signal: AbortSignal.timeout(25000)
+        signal: AbortSignal.timeout(15000)
       });
-      _cleanupSignupHint();
 
       const data = await res.json().catch(() => ({}));
       this._setLoading('signup-submit-btn', false);
 
-      if (res.ok && data.requiresOtp) {
-        // OTP code generated and dispatched -> render verification screen
-        this._showOtpScreen(email.toLowerCase(), name, onAuthSuccess);
-        return;
-      } else if (res.ok && data.token) {
-        // Direct authentication fallback
-        localStorage.setItem('cbt_auth_token', data.token);
-        localStorage.setItem('cbt_user_email', email.toLowerCase());
-        const user = data.user || { name, email, department };
-        Auth.syncUserFromCloud(user, user.id || 'cloud_' + Date.now());
-        this._animateSuccess(() => onAuthSuccess(user));
+      if (res.ok) {
+        // User signup and account creation is successful!
+        // Proceed to the login page to login with their credentials
+        this._switchToLoginWithSuccess(
+          email.toLowerCase(),
+          data.message || 'Account created successfully!'
+        );
         return;
       } else if (res.status === 409) {
         this._showError('signup-error-box', 'An account with this email address already exists. Please sign in instead.');
@@ -551,7 +567,6 @@ export const AuthView = {
       }
 
     } catch (err) {
-      _cleanupSignupHint();
       this._setLoading('signup-submit-btn', false);
       console.error('[Auth] Registration network error:', err);
       const isTimeout = err.name === 'TimeoutError' || err.name === 'AbortError';
@@ -559,7 +574,7 @@ export const AuthView = {
         'signup-error-box',
         isTimeout
           ? '⏱ The server is taking too long to respond. Please try again in a few seconds.'
-          : '📶 Could not reach server to send verification code. Please check your internet connection.'
+          : '📶 Could not reach server. Please check your internet connection.'
       );
     }
   },

@@ -180,7 +180,7 @@ function generateOtp() {
   return Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit
 }
 
-// User Registration — creates unverified account and sends OTP email
+// User Registration — creates account and allows immediate login
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { name, email, password, department, targetJambScore, targetInstitution, preferredCourse } = req.body;
@@ -192,68 +192,47 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 6 characters.' });
     }
 
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser && existingUser.isVerified) {
-      return res.status(409).json({ error: 'An account with this email address already exists.' });
+    const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
+    if (existingUser) {
+      return res.status(409).json({ error: 'An account with this email address already exists. Please sign in.' });
     }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    const otp = generateOtp();
-    const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex');
 
-    if (existingUser && !existingUser.isVerified) {
-      // Update the pending unverified account
-      existingUser.name = name;
-      existingUser.password = hashedPassword;
-      existingUser.department = department || 'Science';
-      existingUser.targetJambScore = targetJambScore || 280;
-      existingUser.targetInstitution = targetInstitution || 'University of Lagos (UNILAG)';
-      existingUser.preferredCourse = preferredCourse || 'Computer Science';
-      existingUser.otpCode = hashedOtp;
-      existingUser.otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
-      existingUser.otpAttempts = 0;
-      existingUser.otpResendCount = 0;
-      await existingUser.save();
-    } else {
-      // Create fresh unverified account
-      const newUser = new User({
-        name, email,
-        password: hashedPassword,
-        department: department || 'Science',
-        targetJambScore: targetJambScore || 280,
-        targetInstitution: targetInstitution || 'University of Lagos (UNILAG)',
-        preferredCourse: preferredCourse || 'Computer Science',
-        isVerified: false,
-        otpCode: hashedOtp,
-        otpExpires: new Date(Date.now() + 10 * 60 * 1000),
-        otpAttempts: 0
-      });
-      await newUser.save();
-    }
+    const newUser = new User({
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      password: hashedPassword,
+      department: department || 'Science',
+      targetJambScore: targetJambScore ? Number(targetJambScore) : 280,
+      targetInstitution: targetInstitution || 'University of Lagos (UNILAG)',
+      preferredCourse: preferredCourse || 'Computer Science',
+      isVerified: true
+    });
+    await newUser.save();
 
-    // Send OTP email
-    console.log(`📨 [OTP] Code generated for ${email}: ${otp}`);
-    const emailRes = await sendOtpEmail({ to: email, name, otp });
-    if (!emailRes.success) {
-      console.error('Failed to send OTP email:', emailRes.error);
-      return res.status(500).json({
-        error: `Account created, but email failed: ${emailRes.error}. Please check your spam folder or try again.`
-      });
-    }
+    console.log(`✅ [REGISTER] Account created for: ${newUser.email} (${newUser.department})`);
 
-    res.status(200).json({
-      requiresOtp: true,
-      message: `A 6-digit verification code has been sent to ${email}. It expires in 10 minutes.`,
-      email
+    // Send Welcome Email in background (non-blocking so student registration is never held up)
+    sendWelcomeEmail({
+      to: newUser.email,
+      name: newUser.name,
+      department: newUser.department,
+      targetScore: newUser.targetJambScore,
+      institution: newUser.targetInstitution
+    }).catch(err => console.warn('Welcome email background notice:', err.message));
+
+    return res.status(201).json({
+      success: true,
+      message: 'Account created successfully! Please sign in with your credentials.',
+      email: newUser.email
     });
   } catch (err) {
     console.error('Registration error:', err);
     let detail = 'Server error during registration.';
     if (!process.env.MONGODB_URI) {
       detail = 'Database is not configured. Please add MONGODB_URI to Environment Variables.';
-    } else if (!process.env.BREVO_API_KEY) {
-      detail = 'Email service is not configured. Please add BREVO_API_KEY to Environment Variables.';
     } else if (err.message) {
       detail = err.message;
     }
@@ -383,18 +362,9 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required.' });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
       return res.status(401).json({ error: 'Invalid email address or password.' });
-    }
-
-    // Block unverified accounts
-    if (!user.isVerified) {
-      return res.status(403).json({
-        error: 'Please verify your email first.',
-        requiresOtp: true,
-        email: user.email
-      });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
