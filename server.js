@@ -1,4 +1,4 @@
-// Root entrypoint for Vercel Node.js auto-detection
+// Root entrypoint
 import app from './server/server.js';
 
 export default app;

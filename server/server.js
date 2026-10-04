@@ -92,10 +92,8 @@ app.use(async (req, res, next) => {
   next();
 });
 
-// Only serve static files in local dev — on Vercel, the CDN handles them
-if (!process.env.VERCEL) {
-  app.use(express.static(rootDir));
-}
+// Serve static frontend assets (HTML, CSS, JS, manifest, service worker)
+app.use(express.static(rootDir));
 
 // ========================================================
 // 1. Mongoose Database Models
@@ -253,9 +251,9 @@ app.post('/api/auth/register', async (req, res) => {
     console.error('Registration error:', err);
     let detail = 'Server error during registration.';
     if (!process.env.MONGODB_URI) {
-      detail = 'Database is not configured. Please add MONGODB_URI to Vercel Environment Variables.';
+      detail = 'Database is not configured. Please add MONGODB_URI to Environment Variables.';
     } else if (!process.env.BREVO_API_KEY) {
-      detail = 'Email service is not configured. Please add BREVO_API_KEY to Vercel Environment Variables.';
+      detail = 'Email service is not configured. Please add BREVO_API_KEY to Environment Variables.';
     } else if (err.message) {
       detail = err.message;
     }
@@ -805,28 +803,24 @@ app.get('/api/leaderboard', async (req, res) => {
 // 3. Server Initialization & MongoDB Connection (Serverless-Ready)
 // ========================================================
 
-// SPA Fallback: serve index.html for root or any frontend route (local dev only)
-// On Vercel, the vercel.json routes catch-all handles this via CDN
-if (!process.env.VERCEL) {
-  app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api')) {
-      return next();
-    }
-    res.sendFile(path.join(rootDir, 'index.html'));
-  });
-}
+// SPA Fallback: serve index.html for root or any frontend route
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(rootDir, 'index.html'));
+});
 
-// Standalone execution (Local development)
-if (!process.env.VERCEL) {
-  connectToDatabase().then(() => {
-    app.listen(PORT, () => {
-      console.log(`🚀 CBT Master API server running at http://localhost:${PORT}`);
-    });
-  }).catch(() => {
-    app.listen(PORT, () => {
-      console.log(`🚀 CBT Master API server running at http://localhost:${PORT} (offline DB)`);
-    });
+// Start Express server & connect to MongoDB
+connectToDatabase().then(() => {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 CBT Master server running on http://0.0.0.0:${PORT}`);
   });
-}
+}).catch((err) => {
+  console.warn('⚠️ Starting server without initial DB connection:', err.message);
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 CBT Master server running on http://0.0.0.0:${PORT} (offline DB)`);
+  });
+});
 
 export default app;
