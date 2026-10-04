@@ -76,7 +76,11 @@ export const Dashboard = {
                 <span class="streak-label">Study Streak</span>
               </div>
             </div>
-            <button id="edit-profile-btn" class="btn-ghost" title="Edit Aspirant Profile & Target">
+            <button id="leaderboard-btn" class="btn-ghost" title="National JAMB Leaderboard">
+              ${Icons.award}
+              <span>Rankings</span>
+            </button>
+            <button id="edit-profile-btn" class="btn-ghost" title="Edit Aspirant Profile &amp; Target">
               ${Icons.edit}
               <span>Edit Target</span>
             </button>
@@ -462,6 +466,11 @@ export const Dashboard = {
       window.App?.navigateToAnalytics();
     });
 
+    // Leaderboard Button
+    document.getElementById('leaderboard-btn')?.addEventListener('click', () => {
+      this.openLeaderboardModal();
+    });
+
     // Edit Profile / Target Button
     const editProfileBtn = document.getElementById("edit-profile-btn");
     if (editProfileBtn) {
@@ -549,13 +558,114 @@ export const Dashboard = {
       });
     });
 
-    // Edit Profile Modal
+    // Edit Profile Modal (secondary binding — kept for safety)
     const editBtn = document.getElementById("edit-profile-btn");
-    if (editBtn) {
+    if (editBtn && !editBtn._bound) {
+      editBtn._bound = true;
       editBtn.addEventListener("click", () => {
         this.openEditProfileModal({ onStartJamb, onStartWaec, onReviewTest, onOpenStudyMode, onOpenNovelStudy });
       });
     }
+  },
+
+  /** National Leaderboard Modal — fetches from cloud or shows local top results */
+  async openLeaderboardModal() {
+    const modal = document.createElement('div');
+    modal.id = 'leaderboard-modal-backdrop';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9000;display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(4px);';
+    modal.innerHTML = `
+      <div style="background:var(--surface-elevated,#1a2235);border:1px solid rgba(255,255,255,0.1);border-radius:20px;width:100%;max-width:560px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;">
+        <div style="padding:1.25rem 1.5rem;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:0.75rem;">
+            <span style="font-size:1.5rem;">🏆</span>
+            <div>
+              <h2 style="margin:0;font-size:1.1rem;font-weight:700;">National JAMB Leaderboard</h2>
+              <p style="margin:0;font-size:0.78rem;color:rgba(255,255,255,0.45);">Top candidates by mock exam performance</p>
+            </div>
+          </div>
+          <button id="lb-close-btn" style="background:none;border:none;color:rgba(255,255,255,0.5);font-size:1.4rem;cursor:pointer;padding:4px 8px;border-radius:8px;line-height:1;">&times;</button>
+        </div>
+        <div id="lb-body" style="overflow-y:auto;padding:1rem 1.5rem;flex:1;">
+          <div style="text-align:center;padding:2.5rem 0;color:rgba(255,255,255,0.4);">
+            <div class="spin" style="width:32px;height:32px;border:3px solid rgba(255,255,255,0.1);border-top-color:#10b981;border-radius:50%;margin:0 auto 1rem;"></div>
+            <p style="margin:0;font-size:0.9rem;">Loading rankings…</p>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    requestAnimationFrame(() => modal.style.opacity = '1');
+
+    const closeModal = () => modal.remove();
+    document.getElementById('lb-close-btn').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+    // Try fetching from cloud
+    let rows = [];
+    try {
+      const res = await fetch(`${(await import('./api.js')).Api._base()}/leaderboard`, {
+        signal: AbortSignal.timeout(8000)
+      });
+      if (res.ok) rows = await res.json();
+    } catch { /* offline fallback */ }
+
+    // Fallback: use local test history
+    if (!rows.length) {
+      const { Storage } = await import('./storage.js');
+      const hist = Storage.getTestHistory();
+      const profile = Storage.getUserProfile();
+      rows = hist.slice(0, 10).map((t, i) => ({
+        rank: i + 1,
+        name: profile.name || 'You',
+        examType: t.examType,
+        department: t.department,
+        scaledJambScore: t.scaledJambScore || Math.round((t.percentage / 100) * 400),
+        percentage: t.percentage,
+        date: t.timestamp
+      }));
+    }
+
+    const lbBody = document.getElementById('lb-body');
+    if (!lbBody) return;
+
+    if (!rows.length) {
+      lbBody.innerHTML = `
+        <div style="text-align:center;padding:3rem 0;color:rgba(255,255,255,0.4);">
+          <div style="font-size:3rem;margin-bottom:0.75rem;">📊</div>
+          <p style="margin:0;font-weight:600;color:rgba(255,255,255,0.6);">No scores yet</p>
+          <p style="margin:0.4rem 0 0;font-size:0.82rem;">Complete a mock exam to appear on the leaderboard!</p>
+        </div>`;
+      return;
+    }
+
+    const medals = ['🥇','🥈','🥉'];
+    lbBody.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:0.88rem;">
+        <thead>
+          <tr style="color:rgba(255,255,255,0.4);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;">
+            <th style="padding:0.5rem 0.4rem;text-align:left;">#</th>
+            <th style="padding:0.5rem 0.4rem;text-align:left;">Candidate</th>
+            <th style="padding:0.5rem 0.4rem;text-align:center;">Type</th>
+            <th style="padding:0.5rem 0.4rem;text-align:right;">Score</th>
+            <th style="padding:0.5rem 0.4rem;text-align:right;">JAMB</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((r, i) => `
+            <tr style="border-top:1px solid rgba(255,255,255,0.06);${i < 3 ? 'background:rgba(16,185,129,0.04);' : ''}">
+              <td style="padding:0.65rem 0.4rem;font-weight:700;">${medals[i] || (i + 1)}</td>
+              <td style="padding:0.65rem 0.4rem;font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.name}</td>
+              <td style="padding:0.65rem 0.4rem;text-align:center;">
+                <span style="background:rgba(99,102,241,0.15);color:#818cf8;padding:2px 8px;border-radius:20px;font-size:0.73rem;font-weight:700;">${r.examType || 'JAMB'}</span>
+              </td>
+              <td style="padding:0.65rem 0.4rem;text-align:right;color:#10b981;font-weight:700;">${typeof r.percentage === 'number' ? r.percentage.toFixed(1) + '%' : '--'}</td>
+              <td style="padding:0.65rem 0.4rem;text-align:right;font-weight:800;color:${i === 0 ? '#f59e0b' : 'rgba(255,255,255,0.8)'};">${r.scaledJambScore || '--'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <p style="text-align:center;font-size:0.75rem;color:rgba(255,255,255,0.25);margin-top:1rem;">Rankings update after each completed mock exam</p>
+    `;
   },
 
   openCustomJambModal({ onStartJamb }) {

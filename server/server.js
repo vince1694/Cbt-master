@@ -57,21 +57,20 @@ app.use((req, res, next) => {
 });
 
 // Database connection helper (cached for serverless execution)
-let cachedDb = null;
 let cachedPromise = null;
 
 export const connectToDatabase = async () => {
-  if (cachedDb && mongoose.connection.readyState === 1) {
-    return cachedDb;
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
   }
-  if (!cachedPromise) {
+  if (!cachedPromise || mongoose.connection.readyState === 0 || mongoose.connection.readyState === 3) {
     const mongoUri = (process.env.MONGODB_URI || '').trim() || MONGODB_DEFAULT_URI;
     console.log('⏳ Connecting to MongoDB Atlas cluster...');
     cachedPromise = mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: 8000,
-      connectTimeoutMS: 8000
+      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 15000,
+      socketTimeoutMS: 30000
     }).then(db => {
-      cachedDb = db;
       console.log('✅ Connected successfully to MongoDB Atlas Cluster!');
       return db;
     }).catch(err => {
@@ -476,45 +475,73 @@ app.post('/api/results', async (req, res) => {
   }
 });
 
-// Forgot Password — send reset email
+// Forgot Password — send 6-digit reset code & reset link
 app.post('/api/auth/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'Email is required.' });
 
-    const user = await User.findOne({ email: email.toLowerCase() });
-    // Always return success to prevent email enumeration
-    if (!user) return res.json({ message: 'If an account exists, a reset link has been sent.' });
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    // If user does not exist, return success anyway to prevent enumeration
+    if (!user) {
+      return res.json({ message: 'If an account exists, a 6-digit reset code has been sent.' });
+    }
 
-    // Generate secure token
+    // Generate 6-digit numeric reset OTP and optional token
+    const resetOtp = generateOtp();
     const resetToken = crypto.randomBytes(32).toString('hex');
-    user.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const hashedOtp = crypto.createHash('sha256').update(resetOtp).digest('hex');
+
+    user.passwordResetToken = hashedOtp;
     user.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
     await user.save();
 
-    await sendPasswordResetEmail({ to: user.email, name: user.name, resetToken });
+    console.log(`🔑 [RESET-CODE] Reset code generated for ${user.email}: ${resetOtp}`);
 
-    res.json({ message: 'If an account exists, a reset link has been sent.' });
+    // Send email with 6-digit code
+    await sendPasswordResetEmail({
+      to: user.email,
+      name: user.name,
+      resetCode: resetOtp,
+      resetToken
+    }).catch(err => console.error('Failed to send reset email:', err.message));
+
+    res.json({ message: 'A 6-digit reset code has been sent to your email.' });
   } catch (err) {
     console.error('Forgot password error:', err);
     res.status(500).json({ error: 'Server error. Please try again.' });
   }
 });
 
-// Reset Password — validate token & update password
+// Reset Password — validate 6-digit code (or token) & update password
 app.post('/api/auth/reset-password', async (req, res) => {
   try {
-    const { token, newPassword } = req.body;
-    if (!token || !newPassword) return res.status(400).json({ error: 'Token and new password are required.' });
+    const { email, otp, token, newPassword } = req.body;
+    if (!newPassword) return res.status(400).json({ error: 'New password is required.' });
     if (newPassword.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters.' });
 
-    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-    const user = await User.findOne({
-      passwordResetToken: hashedToken,
-      passwordResetExpires: { $gt: Date.now() }
-    });
+    let user = null;
 
-    if (!user) return res.status(400).json({ error: 'Reset link is invalid or has expired.' });
+    if (otp && email) {
+      const hashedInput = crypto.createHash('sha256').update(otp.trim()).digest('hex');
+      user = await User.findOne({
+        email: email.toLowerCase().trim(),
+        passwordResetToken: hashedInput,
+        passwordResetExpires: { $gt: Date.now() }
+      });
+    } else if (token) {
+      const hashedToken = crypto.createHash('sha256').update(token.trim()).digest('hex');
+      user = await User.findOne({
+        passwordResetToken: hashedToken,
+        passwordResetExpires: { $gt: Date.now() }
+      });
+    } else {
+      return res.status(400).json({ error: 'Email and 6-digit reset code are required.' });
+    }
+
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid or expired reset code. Please request a new code.' });
+    }
 
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
@@ -522,10 +549,11 @@ app.post('/api/auth/reset-password', async (req, res) => {
     user.passwordResetExpires = undefined;
     await user.save();
 
-    res.json({ message: 'Password reset successful. You can now log in.' });
+    console.log(`✅ [PASSWORD-RESET] Password successfully updated for ${user.email}`);
+    res.json({ message: 'Password reset successful! You can now log in with your new password.' });
   } catch (err) {
     console.error('Reset password error:', err);
-    res.status(500).json({ error: 'Server error. Please try again.' });
+    res.status(500).json({ error: 'Server error during password reset.' });
   }
 });
 
@@ -603,17 +631,94 @@ app.post('/api/email/streak-reminder', async (req, res) => {
 });
 
 // ── ADMIN: Wipe all users and results (protected) ──────────────────────────
-// Only callable with the correct ADMIN_SECRET header to prevent abuse
-app.delete('/api/admin/reset-users', async (req, res) => {
+// Supports browser navigation (GET with HTML prompt & confirmation) and API calls (GET/DELETE/POST).
+app.all('/api/admin/reset-users', async (req, res) => {
   const adminSecret = (process.env.ADMIN_SECRET || 'cbt_admin_reset_2025').trim();
   const provided = (req.headers['x-admin-secret'] || req.query.secret || '').trim();
+
+  // If visited in a browser without the secret, display an interactive confirmation card
+  const isHtml = req.accepts('html') && !req.xhr && !req.headers['x-admin-secret'];
   if (provided !== adminSecret) {
-    return res.status(403).json({ error: 'Forbidden: invalid admin secret.' });
+    if (isHtml) {
+      return res.send(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Reset Database — CBT Master Admin</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0b0f19; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 1.5rem; }
+            .card { background: #161e2e; border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 2.5rem; max-width: 480px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); text-align: center; }
+            h1 { font-size: 1.4rem; color: #ef4444; margin: 0.5rem 0 0.75rem; }
+            p { color: #94a3b8; font-size: 0.95rem; line-height: 1.6; margin: 0 0 1.5rem; }
+            .btn { display: inline-block; background: #ef4444; color: white; text-decoration: none; padding: 14px 28px; border-radius: 12px; font-weight: 700; font-size: 1rem; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 14px rgba(239,68,68,0.4); }
+            .btn:hover { background: #dc2626; transform: translateY(-1px); }
+            .sub { margin-top: 1.5rem; font-size: 0.8rem; color: #64748b; }
+            code { background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; color: #38bdf8; font-family: monospace; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <div style="font-size: 3rem; margin-bottom: 0.5rem;">⚠️</div>
+            <h1>Reset All Users &amp; Results</h1>
+            <p>This action will completely delete all registered user accounts and test results in MongoDB Atlas so you can start completely afresh.</p>
+            <a href="/api/admin/reset-users?secret=${adminSecret}" class="btn">Confirm &amp; Wipe Everything Now</a>
+            <p class="sub">Or pass <code>?secret=${adminSecret}</code> directly in the query.</p>
+          </div>
+        </body>
+        </html>
+      `);
+    }
+    return res.status(403).json({ error: 'Forbidden: invalid admin secret. Provide ?secret=cbt_admin_reset_2025' });
   }
+
   try {
     const userResult = await User.deleteMany({});
     const resultResult = await TestResult.deleteMany({});
     console.log(`🗑️  Admin reset: deleted ${userResult.deletedCount} users and ${resultResult.deletedCount} test results.`);
+
+    if (isHtml) {
+      return res.send(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Reset Successful — CBT Master</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0b0f19; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 1.5rem; }
+            .card { background: #161e2e; border: 1px solid rgba(16,185,129,0.3); border-radius: 20px; padding: 2.5rem; max-width: 440px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); text-align: center; }
+            h1 { font-size: 1.4rem; color: #10b981; margin: 0.5rem 0 0.75rem; }
+            p { color: #94a3b8; font-size: 0.95rem; line-height: 1.6; margin: 0 0 1.5rem; }
+            .stats { background: rgba(255,255,255,0.04); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; display: flex; justify-content: space-around; }
+            .stat-num { font-size: 1.8rem; font-weight: 800; color: #fff; }
+            .stat-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+            a.back-btn { display: inline-block; background: #10b981; color: #0b0f19; text-decoration: none; padding: 12px 24px; border-radius: 10px; font-weight: 700; font-size: 0.95rem; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <div style="font-size: 3rem; margin-bottom: 0.5rem;">🎉</div>
+            <h1>Database Cleared Successfully!</h1>
+            <p>All previous accounts and test history have been permanently wiped. You can now register fresh candidate accounts.</p>
+            <div class="stats">
+              <div>
+                <div class="stat-num">${userResult.deletedCount}</div>
+                <div class="stat-label">Users Deleted</div>
+              </div>
+              <div>
+                <div class="stat-num">${resultResult.deletedCount}</div>
+                <div class="stat-label">Results Deleted</div>
+              </div>
+            </div>
+            <a href="/" class="back-btn">← Back to CBT Master</a>
+          </div>
+        </body>
+        </html>
+      `);
+    }
+
     res.json({
       message: 'All users and test results deleted successfully.',
       usersDeleted: userResult.deletedCount,

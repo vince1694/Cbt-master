@@ -217,20 +217,26 @@ function resultHtml({ name, examTitle, examType, score, total, percentage, scale
   `);
 }
 
-function resetHtml({ name, resetLink }) {
+function resetHtml({ name, resetCode, resetLink }) {
   return baseTemplate(`
-    <h2 style="color:#fff;font-size:20px;font-weight:700;margin:0 0 8px;">&#128272; Reset Your Password</h2>
-    <p style="color:rgba(255,255,255,0.7);font-size:15px;line-height:1.7;margin:0 0 24px;">
-      Hi ${name}, click the button below to reset your CBT Master password.
-      This link expires in <strong style="color:#f5a623;">15 minutes</strong>.
+    <h2 style="color:#fff;font-size:22px;font-weight:700;margin:0 0 8px;">&#128272; Reset Your Password</h2>
+    <p style="color:rgba(255,255,255,0.7);font-size:15px;line-height:1.7;margin:0 0 20px;">
+      Hi ${name || 'Candidate'}, you requested to reset your CBT Master password.
+      Enter the 6-digit verification code below in the password reset window:
     </p>
-    <div style="text-align:center;margin:28px 0;">
-      <a href="${resetLink}" style="display:inline-block;background:linear-gradient(135deg,#f5a623,#f64f59);color:#fff;text-decoration:none;padding:14px 36px;border-radius:50px;font-weight:700;font-size:15px;">
-        &#128273; Reset My Password
-      </a>
+    <div style="background:rgba(245,166,35,0.12);border:1px solid rgba(245,166,35,0.3);border-radius:14px;padding:24px;text-align:center;margin-bottom:24px;">
+      <div style="color:rgba(255,255,255,0.5);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Your 6-Digit Password Reset Code</div>
+      <div style="color:#f5a623;font-size:40px;font-weight:800;letter-spacing:8px;font-family:monospace;">${resetCode || '------'}</div>
+      <div style="color:rgba(255,255,255,0.4);font-size:12px;margin-top:8px;">&#9201; Valid for 15 minutes</div>
     </div>
+    ${resetLink ? `
+    <div style="text-align:center;margin-bottom:24px;">
+      <a href="${resetLink}" style="display:inline-block;background:linear-gradient(135deg,#f5a623,#f64f59);color:#fff;text-decoration:none;padding:12px 28px;border-radius:50px;font-weight:700;font-size:14px;">
+        Or Click Here to Reset Directly
+      </a>
+    </div>` : ''}
     <p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">
-      If you didn't request this, ignore this email &mdash; your account is safe.
+      If you did not request a password reset, you can safely ignore this email &mdash; your account remains secure.
     </p>
   `);
 }
@@ -371,12 +377,12 @@ export async function sendResultEmail({ to, name, examTitle, examType, score, to
   });
 }
 
-export async function sendPasswordResetEmail({ to, name, resetToken }) {
-  const resetLink = `${APP_URL}/reset-password?token=${resetToken}`;
+export async function sendPasswordResetEmail({ to, name, resetCode, resetToken }) {
+  const resetLink = resetToken ? `${APP_URL}/?resetToken=${resetToken}&email=${encodeURIComponent(to)}` : '';
   return sendEmail({
     to, name,
-    subject: '🔐 Reset your CBT Master password',
-    html: resetHtml({ name, resetLink })
+    subject: `🔐 Your CBT Master password reset code: ${resetCode || ''}`,
+    html: resetHtml({ name, resetCode, resetLink })
   });
 }
 

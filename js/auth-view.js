@@ -12,6 +12,19 @@ export const AuthView = {
     this._onAuthSuccess = onAuthSuccess;
     const container = document.getElementById(containerId) || document.body;
     this._showLogin(container, onAuthSuccess);
+
+    // Auto-open reset password modal if URL contains reset parameters
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const resetToken = urlParams.get('resetToken') || urlParams.get('token');
+      const resetOtp = urlParams.get('resetOtp') || urlParams.get('code');
+      const resetEmail = urlParams.get('email') || '';
+      if (resetToken || resetOtp || urlParams.has('reset')) {
+        setTimeout(() => {
+          this._showForgotPasswordModal({ email: resetEmail, otp: resetOtp || '', token: resetToken || '' });
+        }, 350);
+      }
+    } catch {}
   },
 
   _showLogin(container, onAuthSuccess) {
@@ -649,47 +662,29 @@ export const AuthView = {
           body: JSON.stringify({ email, otp })
         });
         const data = await res.json();
-        if (res.ok && data.token) {
-          localStorage.setItem('cbt_auth_token', data.token);
-          localStorage.setItem('cbt_user_email', email);
-          if (data.user && data.user.name) {
-            localStorage.setItem('cbt_user_name', data.user.name);
-          }
-          const userId = (data.user && (data.user.id || data.user._id)) || 'cloud_' + Date.now();
-          localStorage.setItem('cbtmaster_session', JSON.stringify({
-            userId,
-            createdAt: Date.now(),
-            expiry: Date.now() + (30 * 24 * 60 * 60 * 1000)
-          }));
+        if (res.ok) {
+          // Account is now verified on the server.
+          // DON'T auto-login — force user to enter password on the login page.
+          // Clear any stale session state to ensure Auth.isLoggedIn() returns false.
+          localStorage.removeItem('cbt_auth_token');
+          localStorage.removeItem('cbt_user_email');
+          localStorage.removeItem('cbt_user_name');
+          localStorage.removeItem('cbtmaster_session');
+          localStorage.removeItem('cbtmaster_current_user');
 
-          // Synchronize cloud user into local offline store
-          Auth.syncUserFromCloud(data.user || { name, email }, userId);
-
-          if (data.user) {
-            Storage.updateUserProfile({
-              name: data.user.name || name || 'Candidate',
-              email: data.user.email || email,
-              department: data.user.department || 'Science',
-              targetJambScore: data.user.targetJambScore || 280,
-              targetInstitution: data.user.targetInstitution || 'University of Lagos (UNILAG)',
-              preferredCourse: data.user.preferredCourse || 'Computer Science',
-              streakDays: 0,
-              totalTimeMinutes: 0,
-              lastStudyDate: null
-            });
-          }
           const successMsg = document.getElementById('otp-success-msg');
           if (successMsg) {
-            successMsg.textContent = '✓ Email verified! Directing to Sign In…';
+            successMsg.textContent = '✓ Email verified! Redirecting to Sign In…';
             successMsg.classList.remove('hidden');
           }
           boxes.forEach(b => { b.disabled = true; b.style.borderColor = 'rgba(0,200,150,0.6)'; });
 
-          // Per user request: user verifies OTP -> directed to Login page -> logs in with credentials -> dashboard
+          // Redirect to login page after a short delay
           setTimeout(() => {
+            // Re-render auth page (clean state, no session)
             this.render(this._containerId, onAuthSuccess);
 
-            // Ensure login section is active
+            // Ensure login section is visible, not signup
             const loginSection = document.getElementById("login-section");
             const signupSection = document.getElementById("signup-section");
             const formCard = document.getElementById("auth-form-card");
@@ -699,25 +694,20 @@ export const AuthView = {
               formCard?.classList.remove("signup-mode");
             }
 
-            // Pre-fill verified email
+            // Pre-fill the verified email
             const emailInput = document.getElementById('login-email');
-            if (emailInput) {
-              emailInput.value = email;
-            }
+            if (emailInput) emailInput.value = email;
 
-            // Display prominent success banner
+            // Show success banner
             const successBox = document.getElementById('login-success-box');
             if (successBox) {
-              successBox.innerHTML = `🎉 <strong>Account created &amp; verified!</strong><br>Enter your password below to sign in to your dashboard.`;
+              successBox.innerHTML = `🎉 <strong>Account verified!</strong><br>Enter your password to sign in to your dashboard.`;
               successBox.classList.remove('hidden');
             }
 
-            // Focus password input for instant sign-in
-            const passwordInput = document.getElementById('login-password');
-            if (passwordInput) {
-              passwordInput.focus();
-            }
-          }, 750);
+            // Focus the password field for quick sign-in
+            setTimeout(() => document.getElementById('login-password')?.focus(), 100);
+          }, 1200);
         } else {
           errBox.textContent = data.error || 'Incorrect code. Try again.';
           errBox.classList.remove('hidden');
@@ -799,10 +789,15 @@ export const AuthView = {
     };
   },
 
-  _showForgotPasswordModal() {
+  _showForgotPasswordModal(initialData = {}) {
     // Remove any existing modal
     const existingModal = document.getElementById('forgot-pw-modal');
     if (existingModal) existingModal.remove();
+
+    const initialEmail = initialData.email || '';
+    const initialOtp = initialData.otp || '';
+    const initialToken = initialData.token || '';
+    const startInStep2 = Boolean(initialOtp || initialToken);
 
     const modal = document.createElement('div');
     modal.id = 'forgot-pw-modal';
@@ -812,30 +807,90 @@ export const AuthView = {
           <button class="fpw-close" id="fpw-close" aria-label="Close">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
+          
           <div class="fpw-icon">🔐</div>
-          <h2 class="fpw-title">Reset Password</h2>
-          <p class="fpw-desc">Enter your email address and we'll send you a secure reset link.</p>
-          <div id="fpw-error" class="auth-error-box hidden"></div>
-          <div id="fpw-success" class="fpw-success hidden">
+          <h2 class="fpw-title" id="fpw-title">${startInStep2 ? 'Set New Password' : 'Reset Password'}</h2>
+          <p class="fpw-desc" id="fpw-desc">
+            ${startInStep2
+              ? `Enter your 6-digit code and choose a new password.`
+              : `Enter your email address to receive a 6-digit verification code.`}
+          </p>
+
+          <div id="fpw-error" class="auth-error-box hidden" style="margin-bottom:12px;"></div>
+          <div id="fpw-success" class="fpw-success hidden" style="margin-bottom:12px;">
             <div class="fpw-success-icon">✅</div>
-            <p>Check your inbox! A reset link has been sent to your email.</p>
+            <p id="fpw-success-text">Password reset successful!</p>
           </div>
-          <form id="fpw-form" class="fpw-form">
+
+          <!-- STEP 1: Enter Email -->
+          <form id="fpw-step1-form" class="fpw-form ${startInStep2 ? 'hidden' : ''}">
             <div class="auth-input-wrap">
               <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                 <polyline points="22,6 12,13 2,6"/>
               </svg>
-              <input type="email" id="fpw-email" class="auth-input" placeholder="Enter your email address" required autocomplete="email">
+              <input type="email" id="fpw-email" class="auth-input" placeholder="Enter your email address" value="${initialEmail}" required autocomplete="email">
             </div>
-            <button type="submit" class="auth-submit-btn" id="fpw-submit-btn" style="margin-top:12px;">
-              <span class="btn-text">Send Reset Link</span>
+            <button type="submit" class="auth-submit-btn" id="fpw-step1-btn" style="margin-top:8px;">
+              <span class="btn-text">Send 6-Digit Code</span>
               <span class="btn-spinner hidden">
                 <svg class="spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
                 </svg>
               </span>
             </button>
+          </form>
+
+          <!-- STEP 2: Enter 6-digit Code & New Password -->
+          <form id="fpw-step2-form" class="fpw-form ${startInStep2 ? '' : 'hidden'}">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:0.82rem;color:rgba(255,255,255,0.7);">
+              <span>Sent to: <strong id="fpw-active-email" style="color:var(--jamb-emerald);">${initialEmail}</strong></span>
+              <button type="button" id="fpw-back-to-step1" style="background:none;border:none;color:rgba(255,255,255,0.45);font-size:0.8rem;cursor:pointer;text-decoration:underline;">Change</button>
+            </div>
+
+            <!-- 6-digit code input -->
+            <div class="auth-input-wrap">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <input type="text" id="fpw-code" class="auth-input" placeholder="6-digit reset code" value="${initialOtp}" maxlength="6" pattern="[0-9]{6}" required autocomplete="one-time-code" style="letter-spacing:4px;font-weight:700;font-family:monospace;font-size:1.1rem;text-align:center;">
+            </div>
+
+            <!-- New Password -->
+            <div class="auth-input-wrap">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <input type="password" id="fpw-new-password" class="auth-input" placeholder="New password (min. 6 chars)" minlength="6" required autocomplete="new-password">
+              <button type="button" class="toggle-pw-btn" data-target="fpw-new-password" aria-label="Toggle password">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+
+            <!-- Confirm New Password -->
+            <div class="auth-input-wrap">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <input type="password" id="fpw-confirm-password" class="auth-input" placeholder="Confirm new password" minlength="6" required autocomplete="new-password">
+            </div>
+
+            <button type="submit" class="auth-submit-btn" id="fpw-step2-btn" style="margin-top:6px;">
+              <span class="btn-text">Update Password</span>
+              <span class="btn-spinner hidden">
+                <svg class="spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                </svg>
+              </span>
+            </button>
+
+            <div style="text-align:center;margin-top:8px;">
+              <button type="button" id="fpw-resend-btn" style="background:none;border:none;color:var(--jamb-emerald);font-size:0.8rem;font-weight:600;cursor:pointer;text-decoration:underline;">Resend Code</button>
+            </div>
           </form>
         </div>
       </div>
@@ -844,62 +899,224 @@ export const AuthView = {
 
     // Animate in
     requestAnimationFrame(() => {
-      modal.querySelector('.fpw-overlay').classList.add('fpw-visible');
+      modal.querySelector('.fpw-overlay')?.classList.add('fpw-visible');
     });
 
-    // Close handlers
-    const close = () => {
-      modal.querySelector('.fpw-overlay').classList.remove('fpw-visible');
+    // Close handler
+    const closeModal = () => {
+      modal.querySelector('.fpw-overlay')?.classList.remove('fpw-visible');
       setTimeout(() => modal.remove(), 300);
     };
-    document.getElementById('fpw-close').addEventListener('click', close);
-    document.getElementById('fpw-overlay').addEventListener('click', (e) => {
-      if (e.target.id === 'fpw-overlay') close();
+    document.getElementById('fpw-close')?.addEventListener('click', closeModal);
+    document.getElementById('fpw-overlay')?.addEventListener('click', (e) => {
+      if (e.target.id === 'fpw-overlay') closeModal();
     });
 
-    // Submit
-    document.getElementById('fpw-form').addEventListener('submit', async (e) => {
+    // Password visibility toggle for inside modal
+    modal.querySelectorAll('.toggle-pw-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.dataset.target;
+        const input = document.getElementById(targetId);
+        if (input) input.type = input.type === 'password' ? 'text' : 'password';
+      });
+    });
+
+    const errBox = document.getElementById('fpw-error');
+    const successBox = document.getElementById('fpw-success');
+    const step1Form = document.getElementById('fpw-step1-form');
+    const step2Form = document.getElementById('fpw-step2-form');
+    const titleEl = document.getElementById('fpw-title');
+    const descEl = document.getElementById('fpw-desc');
+    const activeEmailEl = document.getElementById('fpw-active-email');
+
+    // Back to Step 1
+    document.getElementById('fpw-back-to-step1')?.addEventListener('click', () => {
+      errBox?.classList.add('hidden');
+      step2Form?.classList.add('hidden');
+      step1Form?.classList.remove('hidden');
+      if (titleEl) titleEl.textContent = 'Reset Password';
+      if (descEl) descEl.textContent = "Enter your email address to receive a 6-digit verification code.";
+      document.getElementById('fpw-email')?.focus();
+    });
+
+    // Resend Code handler
+    document.getElementById('fpw-resend-btn')?.addEventListener('click', async () => {
+      const email = (activeEmailEl?.textContent || document.getElementById('fpw-email')?.value || '').trim();
+      if (!email) return;
+      const resendBtn = document.getElementById('fpw-resend-btn');
+      if (resendBtn) { resendBtn.disabled = true; resendBtn.textContent = 'Sending…'; }
+      try {
+        await fetch(`${Api._base()}/auth/forgot-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.toLowerCase() })
+        });
+        if (errBox) {
+          errBox.textContent = '✓ A fresh 6-digit code has been sent to your email!';
+          errBox.style.color = '#10b981';
+          errBox.style.borderColor = 'rgba(16,185,129,0.3)';
+          errBox.classList.remove('hidden');
+        }
+      } catch {
+        if (errBox) {
+          errBox.textContent = 'Could not resend code. Please try again.';
+          errBox.classList.remove('hidden');
+        }
+      }
+      setTimeout(() => {
+        if (resendBtn) { resendBtn.disabled = false; resendBtn.textContent = 'Resend Code'; }
+      }, 5000);
+    });
+
+    // STEP 1 Submission: Send Code
+    step1Form?.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email = document.getElementById('fpw-email').value.trim();
+      const email = document.getElementById('fpw-email')?.value.trim();
       if (!email) return;
 
-      const errBox = document.getElementById('fpw-error');
-      const successBox = document.getElementById('fpw-success');
-      const btn = document.getElementById('fpw-submit-btn');
-      const text = btn.querySelector('.btn-text');
-      const spinner = btn.querySelector('.btn-spinner');
-
-      // Loading state
-      btn.disabled = true;
-      text.classList.add('hidden');
-      spinner.classList.remove('hidden');
-      errBox.classList.add('hidden');
+      const btn = document.getElementById('fpw-step1-btn');
+      const text = btn?.querySelector('.btn-text');
+      const spinner = btn?.querySelector('.btn-spinner');
+      if (btn) btn.disabled = true;
+      text?.classList.add('hidden');
+      spinner?.classList.remove('hidden');
+      errBox?.classList.add('hidden');
 
       try {
         const res = await fetch(`${Api._base()}/auth/forgot-password`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
+          body: JSON.stringify({ email: email.toLowerCase() }),
+          signal: AbortSignal.timeout(15000)
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
 
-        btn.disabled = false;
-        text.classList.remove('hidden');
-        spinner.classList.add('hidden');
+        if (btn) btn.disabled = false;
+        text?.classList.remove('hidden');
+        spinner?.classList.add('hidden');
 
-        if (res.ok) {
-          document.getElementById('fpw-form').style.display = 'none';
-          successBox.classList.remove('hidden');
-        } else {
-          errBox.textContent = data.error || 'Something went wrong. Try again.';
+        // Transition to Step 2
+        if (activeEmailEl) activeEmailEl.textContent = email;
+        step1Form.classList.add('hidden');
+        step2Form?.classList.remove('hidden');
+        if (titleEl) titleEl.textContent = 'Set New Password';
+        if (descEl) descEl.innerHTML = `Enter the 6-digit code sent to <strong style="color:var(--jamb-emerald);">${email}</strong>`;
+        setTimeout(() => document.getElementById('fpw-code')?.focus(), 150);
+
+      } catch (err) {
+        if (btn) btn.disabled = false;
+        text?.classList.remove('hidden');
+        spinner?.classList.add('hidden');
+        if (errBox) {
+          errBox.textContent = 'Could not reach server. Please check your connection.';
           errBox.classList.remove('hidden');
         }
-      } catch {
-        btn.disabled = false;
-        text.classList.remove('hidden');
-        spinner.classList.add('hidden');
-        errBox.textContent = 'No connection to server. Please try again later.';
-        errBox.classList.remove('hidden');
+      }
+    });
+
+    // STEP 2 Submission: Validate Code & Set New Password
+    step2Form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = (activeEmailEl?.textContent || document.getElementById('fpw-email')?.value || '').trim();
+      const otp = document.getElementById('fpw-code')?.value.trim();
+      const newPassword = document.getElementById('fpw-new-password')?.value;
+      const confirmPassword = document.getElementById('fpw-confirm-password')?.value;
+
+      if (!otp || otp.length !== 6) {
+        if (errBox) { errBox.textContent = 'Please enter the full 6-digit verification code.'; errBox.classList.remove('hidden'); }
+        return;
+      }
+      if (!newPassword || newPassword.length < 6) {
+        if (errBox) { errBox.textContent = 'Password must be at least 6 characters.'; errBox.classList.remove('hidden'); }
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        if (errBox) { errBox.textContent = 'Passwords do not match. Please verify.'; errBox.classList.remove('hidden'); }
+        return;
+      }
+
+      const btn = document.getElementById('fpw-step2-btn');
+      const text = btn?.querySelector('.btn-text');
+      const spinner = btn?.querySelector('.btn-spinner');
+      if (btn) btn.disabled = true;
+      text?.classList.add('hidden');
+      spinner?.classList.remove('hidden');
+      errBox?.classList.add('hidden');
+
+      try {
+        const res = await fetch(`${Api._base()}/auth/reset-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: email.toLowerCase(),
+            otp,
+            token: initialToken,
+            newPassword
+          }),
+          signal: AbortSignal.timeout(15000)
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (btn) btn.disabled = false;
+        text?.classList.remove('hidden');
+        spinner?.classList.add('hidden');
+
+        if (res.ok) {
+          // Success!
+          step2Form.style.display = 'none';
+          if (titleEl) titleEl.style.display = 'none';
+          if (descEl) descEl.style.display = 'none';
+          if (successBox) {
+            const successText = document.getElementById('fpw-success-text');
+            if (successText) successText.textContent = '✓ Password reset successful! Redirecting to sign in…';
+            successBox.classList.remove('hidden');
+          }
+
+          // Smoothly close modal and switch to login with email pre-filled
+          setTimeout(() => {
+            closeModal();
+
+            // Ensure login mode is active
+            const loginSection = document.getElementById('login-section');
+            const signupSection = document.getElementById('signup-section');
+            const formCard = document.getElementById('auth-form-card');
+            if (loginSection && signupSection) {
+              signupSection.classList.add('hidden');
+              loginSection.classList.remove('hidden');
+              formCard?.classList.remove('signup-mode');
+            }
+
+            // Pre-fill email
+            const emailInput = document.getElementById('login-email');
+            if (emailInput && email) emailInput.value = email;
+
+            // Show login success banner
+            const loginSuccess = document.getElementById('login-success-box');
+            if (loginSuccess) {
+              loginSuccess.innerHTML = `🎉 <strong>Password updated successfully!</strong><br>Please enter your new password to sign in to your dashboard.`;
+              loginSuccess.classList.remove('hidden');
+            }
+
+            // Focus password
+            setTimeout(() => document.getElementById('login-password')?.focus(), 150);
+          }, 1200);
+
+        } else {
+          if (errBox) {
+            errBox.textContent = data.error || 'Incorrect code or reset failed. Please check the code.';
+            errBox.style.color = '';
+            errBox.style.borderColor = '';
+            errBox.classList.remove('hidden');
+          }
+        }
+      } catch (err) {
+        if (btn) btn.disabled = false;
+        text?.classList.remove('hidden');
+        spinner?.classList.add('hidden');
+        if (errBox) {
+          errBox.textContent = 'Server connection error. Please try again.';
+          errBox.classList.remove('hidden');
+        }
       }
     });
   },
