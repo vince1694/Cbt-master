@@ -13,18 +13,42 @@ export const Auth = {
 
   // ─── Session Management ─────────────────────────────────────────
   isLoggedIn() {
+    // Check 1: cbtmaster_session (set by both local and cloud login)
     const session = localStorage.getItem(AUTH_KEYS.SESSION);
-    if (!session) return false;
-    try {
-      const { userId, expiry } = JSON.parse(session);
-      if (Date.now() > expiry) {
+    if (session) {
+      try {
+        const { userId, expiry } = JSON.parse(session);
+        if (userId && Date.now() < expiry) return true;
+        // Session expired — clean up
         this.logout();
         return false;
+      } catch {
+        // Malformed session — fall through to JWT check
       }
-      return !!userId;
-    } catch {
-      return false;
     }
+    // Check 2: JWT token + stored email (cloud login without a session object)
+    const token = localStorage.getItem('cbt_auth_token');
+    const email = localStorage.getItem('cbt_user_email');
+    if (token && email) {
+      // Decode the exp claim from the JWT without a library
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.exp && Date.now() / 1000 < payload.exp) {
+          // Restore the session so subsequent isLoggedIn() calls are fast
+          const userId = payload.id || payload.userId || ('cloud_' + email);
+          localStorage.setItem(AUTH_KEYS.SESSION, JSON.stringify({
+            userId,
+            createdAt: Date.now(),
+            expiry: payload.exp * 1000
+          }));
+          return true;
+        }
+      } catch {
+        // JWT malformed — clear it
+        localStorage.removeItem('cbt_auth_token');
+      }
+    }
+    return false;
   },
 
   getCurrentUser() {

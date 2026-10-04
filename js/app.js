@@ -133,8 +133,8 @@ class JambWaecApp {
             ${settings.theme === 'light' ? '🌙' : '☀️'}
           </button>
           <div class="user-chip" id="header-user-chip" title="View profile">
-            <span class="chip-avatar">${profile.name.charAt(0).toUpperCase()}</span>
-            <span class="chip-name">${profile.name.split(' ')[0]}</span>
+            <span class="chip-avatar">${(profile.name || localStorage.getItem('cbt_user_name') || 'Candidate').charAt(0).toUpperCase()}</span>
+            <span class="chip-name">${(profile.name || localStorage.getItem('cbt_user_name') || 'Candidate').split(' ')[0]}</span>
             ${Storage.isPremiumActive() 
               ? '<span class="pw-premium-chip">👑 Premium</span>' 
               : '<span class="chip-dept-dot" style="background: ' + currentDept.color + ';"></span>'

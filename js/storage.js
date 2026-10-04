@@ -36,26 +36,42 @@ export const Storage = {
   // User Profile
   getUserProfile() {
     const raw = localStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+
+    // Helper: build a profile from any JWT / auth-key crumbs we have
+    const _buildFromCloudKeys = (base = {}) => {
+      const name = localStorage.getItem('cbt_user_name') || base.name || 'Candidate';
+      const email = localStorage.getItem('cbt_user_email') || base.email || '';
+      return { ...DEFAULT_PROFILE, ...base, name, email };
+    };
+
     if (!raw) {
+      // If we have cloud auth keys, seed the profile from them instead of blank default
+      const cloudName = localStorage.getItem('cbt_user_name');
+      if (cloudName) {
+        const seeded = _buildFromCloudKeys();
+        localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(seeded));
+        return seeded;
+      }
       localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(DEFAULT_PROFILE));
       return DEFAULT_PROFILE;
     }
     try {
       const parsed = JSON.parse(raw);
       // Automatically purge legacy mock or demo user state
-      if (parsed.name === "Demo Student" || parsed.name === "Future Scholar" || parsed.email === "demo@cbtmaster.ng") {
-        const cleaned = {
-          ...DEFAULT_PROFILE,
-          name: localStorage.getItem('cbt_user_name') || "Candidate",
-          email: localStorage.getItem('cbt_user_email') || "",
-          streakDays: 0,
-          totalTimeMinutes: 0,
-          lastStudyDate: null
-        };
+      if (parsed.name === 'Demo Student' || parsed.name === 'Future Scholar' || parsed.email === 'demo@cbtmaster.ng') {
+        const cleaned = _buildFromCloudKeys();
         localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(cleaned));
         return cleaned;
       }
-      return { ...DEFAULT_PROFILE, ...parsed };
+      // If stored name is still the placeholder "Candidate" but we have a real name in auth keys, use it
+      const result = { ...DEFAULT_PROFILE, ...parsed };
+      const cloudName = localStorage.getItem('cbt_user_name');
+      if ((result.name === 'Candidate' || !result.name) && cloudName) {
+        result.name = cloudName;
+        result.email = result.email || localStorage.getItem('cbt_user_email') || '';
+        localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(result));
+      }
+      return result;
     } catch {
       return DEFAULT_PROFILE;
     }

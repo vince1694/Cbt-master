@@ -32,12 +32,19 @@ try {
 
 const { BrevoClient } = require('@getbrevo/brevo');
 
+const DEFAULT_SENDER_EMAIL = '2bethel4u@gmail.com';
+
 // ── Brevo Client (lazy — reads env at call time) ──────────────────────────────
 let _brevo = null;
+function getBrevoApiKey() {
+  const key = (process.env.BREVO_API_KEY || '').trim();
+  if (!key) throw new Error('BREVO_API_KEY is not set in environment.');
+  return key;
+}
+
 function getBrevo() {
   if (!_brevo) {
-    const key = (process.env.BREVO_API_KEY || '').trim();
-    if (!key) throw new Error('BREVO_API_KEY is not set in environment.');
+    const key = getBrevoApiKey();
     _brevo = new BrevoClient({ apiKey: key });
   }
   return _brevo;
@@ -48,7 +55,7 @@ function getSender() {
   // Ensure we NEVER use an unverified/smtp login address such as bc5880001@smtp-brevo.com
   // 2bethel4u@gmail.com is the verified sender in Brevo.
   const senderEmail = (!envSender || envSender.includes('smtp-brevo.com') || envSender.includes('@smtp'))
-    ? '2bethel4u@gmail.com'
+    ? DEFAULT_SENDER_EMAIL
     : envSender;
 
   return {
@@ -293,9 +300,41 @@ function otpHtml({ name, otp, isResend }) {
 
 
 async function sendEmail({ to, name, subject, html }) {
+  const apiKey = getBrevoApiKey();
+  const sender = getSender();
+
+  // 1. Fast direct HTTPS REST API call (no SDK overhead, instant delivery)
+  try {
+    const directRes = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'api-key': apiKey
+      },
+      body: JSON.stringify({
+        sender,
+        to: [{ email: to, name: name || 'Candidate' }],
+        subject,
+        htmlContent: html
+      }),
+      signal: AbortSignal.timeout(8000)
+    });
+
+    const data = await directRes.json().catch(() => ({}));
+    if (directRes.ok && (data.messageId || directRes.status === 201 || directRes.status === 200)) {
+      console.log(`📧 [Brevo REST] Email sent → ${to} | "${subject}" (id: ${data.messageId || 'ok'})`);
+      return { success: true, messageId: data.messageId || 'sent' };
+    }
+    console.warn(`[Brevo REST] Direct call response status ${directRes.status}:`, data);
+  } catch (directErr) {
+    console.warn('[Brevo REST] Direct call error, trying SDK fallback:', directErr.message);
+  }
+
+  // 2. Fallback to Brevo SDK
   try {
     const brevoPromise = getBrevo().transactionalEmails.sendTransacEmail({
-      sender: getSender(),
+      sender,
       to: [{ email: to, name }],
       subject,
       htmlContent: html
@@ -306,7 +345,7 @@ async function sendEmail({ to, name, subject, html }) {
     );
     const res = await Promise.race([brevoPromise, timeoutPromise]);
     const messageId = res?.messageId || res?.body?.messageId || 'sent';
-    console.log(`📧 Email sent → ${to} | "${subject}"`);
+    console.log(`📧 [Brevo SDK] Email sent → ${to} | "${subject}"`);
     return { success: true, messageId };
   } catch (err) {
     console.error(`❌ Email failed → ${to}:`, err?.message || err);

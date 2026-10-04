@@ -8,6 +8,8 @@ import { Api } from './api.js';
 export const AuthView = {
 
   render(containerId, onAuthSuccess) {
+    this._containerId = containerId;
+    this._onAuthSuccess = onAuthSuccess;
     const container = document.getElementById(containerId) || document.body;
     this._showLogin(container, onAuthSuccess);
   },
@@ -77,6 +79,7 @@ export const AuthView = {
               </div>
 
               <div id="login-error-box" class="auth-error-box hidden"></div>
+              <div id="login-success-box" class="auth-success-box hidden" style="background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.35);color:#10b981;border-radius:10px;padding:12px 16px;font-size:0.9rem;font-weight:600;margin-bottom:1.25rem;text-align:center;line-height:1.5;"></div>
 
               <form id="login-form" class="auth-form" novalidate>
                 <div class="auth-field-group">
@@ -330,6 +333,7 @@ export const AuthView = {
 
   async _handleLogin(onAuthSuccess) {
     this._hideError('login-error-box');
+    document.getElementById('login-success-box')?.classList.add('hidden');
     const email = document.getElementById('login-email')?.value.trim();
     const password = document.getElementById('login-password')?.value;
 
@@ -341,24 +345,24 @@ export const AuthView = {
     this._setLoading('login-submit-btn', true);
 
     try {
-      // 1. Direct cloud authentication request (no slow pre-flight ping)
+      // Direct cloud authentication request with 10s timeout
       const res = await fetch(`${Api._base()}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.toLowerCase(), password }),
-        signal: AbortSignal.timeout(10000) // 10s generous timeout
+        signal: AbortSignal.timeout(10000)
       });
 
       const data = await res.json().catch(() => ({}));
 
-      // Account registered but not yet verified -> smoothly send to OTP screen
+      // Unverified account — send to OTP screen
       if (res.status === 403 && data.requiresOtp) {
         this._setLoading('login-submit-btn', false);
         this._showOtpScreen(data.email || email, '', onAuthSuccess);
         return;
       }
 
-      // Successful cloud authentication
+      // ✅ Successful cloud login
       if (res.ok && data.token) {
         localStorage.setItem('cbt_auth_token', data.token);
         localStorage.setItem('cbt_user_email', email.toLowerCase());
@@ -372,13 +376,14 @@ export const AuthView = {
           expiry: Date.now() + (30 * 24 * 60 * 60 * 1000)
         }));
 
-        // Synchronize cloud user into local offline store
+        // Sync cloud user into local offline store
         Auth.syncUserFromCloud(data.user, userId);
 
+        // Always update the profile — ensures dashboard shows real user data
         if (data.user) {
           Storage.updateUserProfile({
-            name: data.user.name || 'Candidate',
-            email: data.user.email || email,
+            name: data.user.name || email.split('@')[0],
+            email: data.user.email || email.toLowerCase(),
             department: data.user.department || 'Science',
             targetJambScore: data.user.targetJambScore || 280,
             targetInstitution: data.user.targetInstitution || 'University of Lagos (UNILAG)',
@@ -387,39 +392,37 @@ export const AuthView = {
         }
 
         this._setLoading('login-submit-btn', false);
-        this._animateSuccess(() => onAuthSuccess(data.user));
+        this._animateSuccess(() => onAuthSuccess(data.user || { name: data.user?.name || email.split('@')[0], email }));
         return;
       }
 
-      // Credentials mismatch or user not found on cloud
-      if (res.status === 401 || res.status === 400) {
-        // Fallback: check local offline storage
+      // ❌ Server returned an error (wrong password, not found, etc.)
+      this._setLoading('login-submit-btn', false);
+      const serverError = data.error || 'Invalid email address or password.';
+
+      if (res.status === 401) {
         const localResult = Auth.login({ email, password });
         if (localResult.success) {
-          this._setLoading('login-submit-btn', false);
           this._animateSuccess(() => onAuthSuccess(localResult.user));
           return;
         }
-
-        this._setLoading('login-submit-btn', false);
         this._showError('login-error-box', data.error || 'Invalid email address or password.');
         return;
       }
 
-      // Other HTTP errors (e.g. 500)
-      throw new Error(data.error || 'Login service unavailable. Please try again.');
+      this._showError('login-error-box', serverError);
 
     } catch (err) {
-      console.warn('[Auth] Cloud login network failure, trying offline cache:', err);
-      // Offline fallback: check local storage database
-      const localResult = Auth.login({ email, password });
+      // Network failure — server unreachable
+      console.warn('[Auth] Cloud login network error:', err.message);
       this._setLoading('login-submit-btn', false);
 
+      const localResult = Auth.login({ email, password });
       if (localResult.success) {
         this._animateSuccess(() => onAuthSuccess(localResult.user));
-      } else {
-        this._showError('login-error-box', localResult.error || 'Unable to connect to server. Please check your internet connection.');
+        return;
       }
+      this._showError('login-error-box', 'Unable to reach the authentication server. Please check your internet connection.');
     }
   },
 
@@ -618,9 +621,46 @@ export const AuthView = {
               lastStudyDate: null
             });
           }
-          document.getElementById('otp-success-msg').classList.remove('hidden');
+          const successMsg = document.getElementById('otp-success-msg');
+          if (successMsg) {
+            successMsg.textContent = '✓ Email verified! Directing to Sign In…';
+            successMsg.classList.remove('hidden');
+          }
           boxes.forEach(b => { b.disabled = true; b.style.borderColor = 'rgba(0,200,150,0.6)'; });
-          setTimeout(() => this._animateSuccess(() => onAuthSuccess(data.user)), 700);
+
+          // Per user request: user verifies OTP -> directed to Login page -> logs in with credentials -> dashboard
+          setTimeout(() => {
+            this.render(this._containerId, onAuthSuccess);
+
+            // Ensure login section is active
+            const loginSection = document.getElementById("login-section");
+            const signupSection = document.getElementById("signup-section");
+            const formCard = document.getElementById("auth-form-card");
+            if (loginSection && signupSection) {
+              signupSection.classList.add("hidden");
+              loginSection.classList.remove("hidden");
+              formCard?.classList.remove("signup-mode");
+            }
+
+            // Pre-fill verified email
+            const emailInput = document.getElementById('login-email');
+            if (emailInput) {
+              emailInput.value = email;
+            }
+
+            // Display prominent success banner
+            const successBox = document.getElementById('login-success-box');
+            if (successBox) {
+              successBox.innerHTML = `🎉 <strong>Account created &amp; verified!</strong><br>Enter your password below to sign in to your dashboard.`;
+              successBox.classList.remove('hidden');
+            }
+
+            // Focus password input for instant sign-in
+            const passwordInput = document.getElementById('login-password');
+            if (passwordInput) {
+              passwordInput.focus();
+            }
+          }, 750);
         } else {
           errBox.textContent = data.error || 'Incorrect code. Try again.';
           errBox.classList.remove('hidden');
@@ -641,7 +681,15 @@ export const AuthView = {
 
     submitBtn.addEventListener('click', doVerify);
     document.getElementById('otp-back-btn')?.addEventListener('click', () => {
-      window.location.reload();
+      this.render(this._containerId, onAuthSuccess);
+      const loginSection = document.getElementById("login-section");
+      const signupSection = document.getElementById("signup-section");
+      const formCard = document.getElementById("auth-form-card");
+      if (loginSection && signupSection) {
+        loginSection.classList.add("hidden");
+        signupSection.classList.remove("hidden");
+        formCard?.classList.add("signup-mode");
+      }
     });
 
     this._startOtpResend(email, boxes);

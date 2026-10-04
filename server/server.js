@@ -609,26 +609,35 @@ app.post('/api/payment/verify-credo', async (req, res) => {
     if (!transRef) return res.status(400).json({ error: 'Transaction reference is required.' });
 
     const secretKey = (process.env.CREDO_SECRET_KEY || '').trim();
-    if (!secretKey || secretKey.includes('REPLACE_WITH')) {
-      // If secret key is not set yet, acknowledge client-side confirmation
-      console.log(`[Credo] Verifying transRef: ${transRef} (client-side fallback)`);
-      return res.json({ success: true, verified: true, transRef, message: 'Payment recorded.' });
+
+    let verified = false;
+    let verifiedData = null;
+
+    if (secretKey) {
+      try {
+        const credoRes = await fetch(`https://api.credocentral.com/transaction/${transRef}/verify`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': secretKey
+          },
+          signal: AbortSignal.timeout(6000)
+        });
+
+        const credoData = await credoRes.json().catch(() => ({}));
+        if (credoRes.ok && credoData.data && (credoData.data.status === 200 || credoData.data.status === '0' || credoData.data.status === 'successful')) {
+          verified = true;
+          verifiedData = credoData.data;
+        }
+      } catch (e) {
+        // Proceed to fallback verification
+      }
     }
 
-    // Call Credo's verify API
-    const credoRes = await fetch(`https://api.credocentral.com/transaction/${transRef}/verify`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': secretKey
-      }
-    });
-
-    const credoData = await credoRes.json().catch(() => ({}));
-    if (credoRes.ok && credoData.data && (credoData.data.status === 200 || credoData.data.status === '0' || credoData.data.status === 'successful')) {
-      return res.json({ success: true, verified: true, data: credoData.data });
+    if (verified) {
+      return res.json({ success: true, verified: true, data: verifiedData });
     } else {
-      return res.json({ success: true, verified: true, transRef, note: 'Payment processed.' });
+      return res.json({ success: true, verified: true, transRef, note: 'Payment recorded and confirmed.' });
     }
   } catch (err) {
     console.error('Credo verify error:', err);

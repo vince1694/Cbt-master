@@ -32,7 +32,11 @@ export const Dashboard = {
       Arts: Icons.scale,
       Commercial: Icons.briefcase
     };
-    const activeDeptIcon = deptIconMap[profile.department] || Icons.book;
+    const candidateName = profile.name || localStorage.getItem('cbt_user_name') || 'Candidate';
+    const candidateInitial = candidateName.charAt(0).toUpperCase();
+    const candidateEmail = profile.email || localStorage.getItem('cbt_user_email') || '';
+    const preferredCourse = profile.preferredCourse || 'Computer Science';
+    const targetInstitution = profile.targetInstitution || 'University of Lagos (UNILAG)';
 
     container.innerHTML = `
       <div class="dashboard-wrapper">
@@ -40,18 +44,26 @@ export const Dashboard = {
         <section class="profile-hero">
           <div class="profile-details">
             <div class="avatar-ring">
-              <span>${profile.name.charAt(0).toUpperCase()}</span>
+              <span>${candidateInitial}</span>
             </div>
             <div>
               <div class="profile-title-row">
-                <h1 class="student-name">${profile.name}</h1>
+                <h1 class="student-name">${candidateName}</h1>
                 <span class="dept-badge" style="background: ${currentDept.color}18; color: ${currentDept.color}; border: 1px solid ${currentDept.color}40;">
                   ${activeDeptIcon} ${currentDept.name} Track
                 </span>
               </div>
               <p class="aspirant-target">
-                Aspiring Candidate for <strong>${profile.preferredCourse}</strong> at <strong>${profile.targetInstitution}</strong>
+                Aspiring Candidate for <strong>${preferredCourse}</strong> at <strong>${targetInstitution}</strong>
               </p>
+              ${candidateEmail ? `
+                <div class="aspirant-email-tag" style="margin-top: 4px; font-size: 0.8rem; color: rgba(255,255,255,0.5); display: flex; align-items: center; gap: 6px;">
+                  <span>✉️</span>
+                  <span>${candidateEmail}</span>
+                  <span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.3);"></span>
+                  <span style="color:var(--jamb-emerald);font-weight:600;">Authenticated Candidate</span>
+                </div>
+              ` : ''}
             </div>
           </div>
 
