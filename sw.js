@@ -3,7 +3,7 @@
  * Network-First for navigation/HTML (ensures immediate updates on release),
  * Stale-While-Revalidate for static assets, with offline fallback.
  */
-const CACHE_NAME = 'cbt-master-v5';
+const CACHE_NAME = 'cbt-master-v6';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -15,6 +15,7 @@ const ASSETS_TO_CACHE = [
   './css/mobile.css',
   './css/novel-hub.css',
   './css/features.css',
+  './css/paywall.css',
   './js/app.js',
   './js/api.js',
   './js/auth.js',
@@ -35,6 +36,7 @@ const ASSETS_TO_CACHE = [
   './js/question-browser.js',
   './js/analytics-view.js',
   './js/study-planner.js',
+  './js/paywall.js',
   './js/questions/index.js',
   './js/questions/english.js',
   './js/questions/science.js',
@@ -71,8 +73,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Skip non-GET and API backend endpoints
-  if (event.request.method !== 'GET' || url.pathname.startsWith('/api/')) {
+  // Skip non-GET, external CDNs / APIs, and API backend endpoints
+  if (
+    event.request.method !== 'GET' ||
+    url.origin !== self.location.origin ||
+    url.pathname.startsWith('/api')
+  ) {
     return;
   }
 

@@ -32,6 +32,7 @@ export const Dashboard = {
       Arts: Icons.scale,
       Commercial: Icons.briefcase
     };
+    const activeDeptIcon = deptIconMap[profile.department] || Icons.book;
     const candidateName = profile.name || localStorage.getItem('cbt_user_name') || 'Candidate';
     const candidateInitial = candidateName.charAt(0).toUpperCase();
     const candidateEmail = profile.email || localStorage.getItem('cbt_user_email') || '';

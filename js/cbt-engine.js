@@ -272,7 +272,9 @@ export class CbtEngine {
       : 0;
 
     // Scaled JAMB score (Scale to 400 marks)
-    const scaledJambScore = Math.round((correctCount / this.questions.length) * 400);
+    const scaledJambScore = this.questions.length > 0
+      ? Math.round((correctCount / this.questions.length) * 400)
+      : 0;
 
     // WAEC Grade
     const waecGrade = calculateWaecGrade(scorePercentage);

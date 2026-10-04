@@ -344,14 +344,38 @@ export const AuthView = {
 
     this._setLoading('login-submit-btn', true);
 
+    // Show progressive loading messages for slow connections / cold starts
+    const loginBtn = document.getElementById('login-submit-btn');
+    const spinnerMsgEl = loginBtn?.querySelector('.btn-spinner');
+    let warmUpTimer = null;
+    warmUpTimer = setTimeout(() => {
+      const btnText = loginBtn?.querySelector('.btn-text');
+      if (btnText && !loginBtn?.disabled) return;
+      // Already loading — show warm-up hint after 4s
+      const existingHint = document.getElementById('login-warmup-hint');
+      if (!existingHint) {
+        const hint = document.createElement('div');
+        hint.id = 'login-warmup-hint';
+        hint.style.cssText = 'text-align:center;color:rgba(255,255,255,0.5);font-size:0.8rem;margin-top:8px;';
+        hint.textContent = '⏳ Server is warming up, please wait a moment…';
+        loginBtn?.parentNode?.insertBefore(hint, loginBtn.nextSibling);
+      }
+    }, 4000);
+
+    const _cleanupHint = () => {
+      clearTimeout(warmUpTimer);
+      document.getElementById('login-warmup-hint')?.remove();
+    };
+
     try {
-      // Direct cloud authentication request with 10s timeout
+      // Extended timeout to 20s to accommodate Vercel serverless cold starts
       const res = await fetch(`${Api._base()}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.toLowerCase(), password }),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(20000)
       });
+      _cleanupHint();
 
       const data = await res.json().catch(() => ({}));
 
@@ -413,16 +437,25 @@ export const AuthView = {
       this._showError('login-error-box', serverError);
 
     } catch (err) {
-      // Network failure — server unreachable
+      // Network failure or timeout
+      _cleanupHint();
       console.warn('[Auth] Cloud login network error:', err.message);
       this._setLoading('login-submit-btn', false);
 
+      // If user previously registered offline, allow cached login
       const localResult = Auth.login({ email, password });
       if (localResult.success) {
         this._animateSuccess(() => onAuthSuccess(localResult.user));
         return;
       }
-      this._showError('login-error-box', 'Unable to reach the authentication server. Please check your internet connection.');
+
+      const isTimeout = err.name === 'TimeoutError' || err.name === 'AbortError';
+      this._showError(
+        'login-error-box',
+        isTimeout
+          ? '⏱ The server is taking too long to respond. Please try again in a few seconds.'
+          : '📶 Unable to connect to the server. Please check your internet connection and try again.'
+      );
     }
   },
 
@@ -447,8 +480,24 @@ export const AuthView = {
 
     this._setLoading('signup-submit-btn', true);
 
+    // Progressive loading hint for slow serverless cold starts
+    let signupHintTimer = setTimeout(() => {
+      const existingHint = document.getElementById('signup-warmup-hint');
+      if (!existingHint) {
+        const hint = document.createElement('div');
+        hint.id = 'signup-warmup-hint';
+        hint.style.cssText = 'text-align:center;color:rgba(255,255,255,0.5);font-size:0.8rem;margin-top:8px;';
+        hint.textContent = '⏳ Sending your verification code, please wait…';
+        document.getElementById('signup-submit-btn')?.parentNode?.appendChild(hint);
+      }
+    }, 4000);
+    const _cleanupSignupHint = () => {
+      clearTimeout(signupHintTimer);
+      document.getElementById('signup-warmup-hint')?.remove();
+    };
+
     try {
-      // Direct registration call with 15s timeout for email dispatch
+      // Extended timeout: 25s for cold starts + email dispatch
       const res = await fetch(`${Api._base()}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -461,8 +510,9 @@ export const AuthView = {
           targetInstitution,
           preferredCourse
         }),
-        signal: AbortSignal.timeout(15000)
+        signal: AbortSignal.timeout(25000)
       });
+      _cleanupSignupHint();
 
       const data = await res.json().catch(() => ({}));
       this._setLoading('signup-submit-btn', false);
@@ -488,9 +538,16 @@ export const AuthView = {
       }
 
     } catch (err) {
+      _cleanupSignupHint();
       this._setLoading('signup-submit-btn', false);
       console.error('[Auth] Registration network error:', err);
-      this._showError('signup-error-box', 'Could not reach server to send verification code. Please check your internet connection.');
+      const isTimeout = err.name === 'TimeoutError' || err.name === 'AbortError';
+      this._showError(
+        'signup-error-box',
+        isTimeout
+          ? '⏱ The server is taking too long to respond. Please try again in a few seconds.'
+          : '📶 Could not reach server to send verification code. Please check your internet connection.'
+      );
     }
   },
 
