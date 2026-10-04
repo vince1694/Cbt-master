@@ -38,7 +38,11 @@ const DEFAULT_SENDER_EMAIL = '2bethel4u@gmail.com';
 let _brevo = null;
 function getBrevoApiKey() {
   const key = (process.env.BREVO_API_KEY || '').trim();
-  if (!key) throw new Error('BREVO_API_KEY is not set in environment.');
+  if (!key) {
+    // Log clearly so server logs show why email failed
+    console.error('[email-service] ❌ BREVO_API_KEY is not set! OTP emails will fail. Set it in Render Environment Variables.');
+    throw new Error('BREVO_API_KEY is not set in environment. Add it to Render > Environment Variables.');
+  }
   return key;
 }
 
