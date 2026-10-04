@@ -239,10 +239,11 @@ class JambWaecApp {
   }
 
   _handleLogout() {
-    if (confirm("Sign out of CBT Master?")) {
-      Auth.logout();
-      window.location.reload();
-    }
+    // Note: confirm() is silently blocked on many mobile browsers — don't use it.
+    Auth.logout();
+    // Use replace() so the back button can't bring the user back into the app.
+    // Add a cache-bust param so the browser fetches a fresh page (not cached logged-in state).
+    window.location.replace(window.location.pathname + '?t=' + Date.now());
   }
 
   navigateToDashboard() {
