@@ -435,6 +435,14 @@ export const AuthView = {
               targetInstitution: data.user.targetInstitution || 'University of Lagos (UNILAG)',
               preferredCourse: data.user.preferredCourse || 'Computer Science'
             });
+
+            // Automatically restore premium access across devices
+            if (data.user.isPremium) {
+              Storage.setPremium({
+                reference: data.user.premiumReference || 'cloud_synced',
+                email: email.toLowerCase()
+              });
+            }
           }
           this._setLoading('login-submit-btn', false);
           this._animateSuccess(() => onAuthSuccess(data.user || { name: data.user?.name || email.split('@')[0], email }));
@@ -566,8 +574,31 @@ export const AuthView = {
       this._setLoading('signup-submit-btn', false);
 
       if (res.ok) {
-        // User signup and account creation is successful!
-        // Proceed to the login page to login with their credentials
+        if (data.token) {
+          // Direct seamless onboarding: log in immediately
+          localStorage.setItem('cbt_auth_token', data.token);
+          localStorage.setItem('cbt_user_email', email.toLowerCase());
+          localStorage.setItem('cbt_user_name', name);
+          const userId = (data.user && (data.user.id || data.user._id)) || 'cloud_' + Date.now();
+          localStorage.setItem('cbtmaster_session', JSON.stringify({
+            userId,
+            createdAt: Date.now(),
+            expiry: Date.now() + (30 * 24 * 60 * 60 * 1000)
+          }));
+          Auth.syncUserFromCloud(data.user, userId);
+          Storage.updateUserProfile({
+            name,
+            email: email.toLowerCase(),
+            department,
+            targetJambScore: targetScore,
+            targetInstitution,
+            preferredCourse
+          });
+          this._animateSuccess(() => onAuthSuccess(data.user || { name, email }));
+          return;
+        }
+
+        // Fallback for legacy endpoints: switch to login with email prefilled
         this._switchToLoginWithSuccess(
           email.toLowerCase(),
           data.message || 'Account created successfully!'

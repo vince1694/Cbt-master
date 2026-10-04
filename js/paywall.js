@@ -9,6 +9,7 @@
  *  - Credo amounts are in Kobo (smallest unit): NGN 2,000 = 200000 kobo
  */
 import { Storage } from './storage.js';
+import { Api } from './api.js';
 
 const PREMIUM_AMOUNT_KOBO = 200000;  // NGN 2,000
 
@@ -232,7 +233,16 @@ export const Paywall = {
           if (loadingEl) loadingEl.classList.add('hidden');
           console.log('[Paywall] Credo callBack response:', response);
           if (response && (response.status === 'success' || response.status === 'PAID' || response.status === 200 || response.status === 0)) {
-            Storage.setPremium({ reference: response.reference || response.transactionRef, email });
+            const transRef = response.reference || response.transactionRef || ('credo_' + Date.now());
+            Storage.setPremium({ reference: transRef, email });
+
+            // Persist premium status to MongoDB in cloud
+            fetch(`${Api._base()}/payment/verify-credo`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ transRef, email })
+            }).catch(e => console.warn('[Paywall] Cloud verification sync notice:', e));
+
             closeModal();
             this._showSuccessToast();
             if (onGranted) setTimeout(onGranted, 700);

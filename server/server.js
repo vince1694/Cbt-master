@@ -119,6 +119,9 @@ const userSchema = new mongoose.Schema({
   // Password reset
   passwordResetToken: { type: String },
   passwordResetExpires: { type: Date },
+  // Premium subscription status
+  isPremium: { type: Boolean, default: false },
+  premiumReference: { type: String },
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -214,7 +217,7 @@ app.post('/api/auth/register', async (req, res) => {
 
     console.log(`✅ [REGISTER] Account created for: ${newUser.email} (${newUser.department})`);
 
-    // Send Welcome Email in background (non-blocking so student registration is never held up)
+    // Send Welcome Email in background (non-blocking)
     sendWelcomeEmail({
       to: newUser.email,
       name: newUser.name,
@@ -223,10 +226,27 @@ app.post('/api/auth/register', async (req, res) => {
       institution: newUser.targetInstitution
     }).catch(err => console.warn('Welcome email background notice:', err.message));
 
+    // Issue JWT token immediately so candidate is logged in without friction
+    const token = jwt.sign(
+      { id: newUser._id, email: newUser.email, name: newUser.name },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
     return res.status(201).json({
       success: true,
-      message: 'Account created successfully! Please sign in with your credentials.',
-      email: newUser.email
+      message: 'Account created successfully! Welcome to CBT Master.',
+      token,
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        department: newUser.department,
+        targetJambScore: newUser.targetJambScore,
+        targetInstitution: newUser.targetInstitution,
+        preferredCourse: newUser.preferredCourse,
+        isPremium: false
+      }
     });
   } catch (err) {
     console.error('Registration error:', err);
@@ -388,7 +408,9 @@ app.post('/api/auth/login', async (req, res) => {
         department: user.department,
         targetJambScore: user.targetJambScore,
         targetInstitution: user.targetInstitution,
-        preferredCourse: user.preferredCourse
+        preferredCourse: user.preferredCourse,
+        isPremium: !!user.isPremium,
+        premiumReference: user.premiumReference || null
       }
     });
   } catch (err) {
@@ -701,7 +723,7 @@ app.all('/api/admin/reset-users', async (req, res) => {
 // Credo Payment Verification Endpoint
 app.post('/api/payment/verify-credo', async (req, res) => {
   try {
-    const { transRef } = req.body;
+    const { transRef, email } = req.body;
     if (!transRef) return res.status(400).json({ error: 'Transaction reference is required.' });
 
     const secretKey = (process.env.CREDO_SECRET_KEY || '').trim();
@@ -727,6 +749,22 @@ app.post('/api/payment/verify-credo', async (req, res) => {
         }
       } catch (e) {
         // Proceed to fallback verification
+      }
+    }
+
+    // Persist premium status to MongoDB if user email is known
+    const userEmail = email || (verifiedData && verifiedData.customer && verifiedData.customer.email);
+    if (userEmail) {
+      try {
+        const user = await User.findOne({ email: userEmail.toLowerCase().trim() });
+        if (user) {
+          user.isPremium = true;
+          user.premiumReference = transRef;
+          await user.save();
+          console.log(`👑 [PREMIUM] User upgraded to premium: ${user.email} (ref: ${transRef})`);
+        }
+      } catch (dbErr) {
+        console.warn('Could not update user premium state in DB:', dbErr.message);
       }
     }
 

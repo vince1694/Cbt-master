@@ -242,6 +242,12 @@ body {
   background: var(--surface-highlight);
 }
 
+.header-logout-btn:hover {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.08);
+}
+
 .user-chip {
   display: flex;
   align-items: center;

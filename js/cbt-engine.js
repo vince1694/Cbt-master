@@ -3,6 +3,7 @@
  * Powers exam timers, question navigation, 8-key shortcuts, on-screen calculator, scoring, and review
  */
 import { Storage } from './storage.js';
+import { Api } from './api.js';
 import { calculateWaecGrade } from './questions/index.js';
 import { SoundFX } from './sound-fx.js';
 
@@ -295,8 +296,15 @@ export class CbtEngine {
       questions: this.questions
     };
 
-    // Save to persistent storage
+    // Save to persistent storage locally
     Storage.saveTestResult(result);
+
+    // Sync to cloud MongoDB + trigger student result summary email
+    try {
+      Api.saveResult(result).catch(e => console.warn('[CBT Engine] Cloud result sync notice:', e));
+    } catch {
+      // Offline fallback already secured in Storage
+    }
 
     if (this.onSubmit) {
       this.onSubmit(result);
