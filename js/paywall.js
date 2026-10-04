@@ -140,28 +140,73 @@ export const Paywall = {
       return;
     }
 
-    if (loadingEl) loadingEl.classList.remove('hidden');
-
-    // Check Credo widget is loaded
-    if (typeof window.CredoWidget === 'undefined') {
-      if (loadingEl) loadingEl.classList.add('hidden');
-      this._showPaymentFallback({ closeModal });
-      return;
+    if (loadingEl) {
+      loadingEl.classList.remove('hidden');
+      const p = loadingEl.querySelector('p');
+      if (p) p.textContent = 'Loading secure payment…';
     }
 
+    // Ensure Credo script is loaded — retry loading it if CredoWidget is undefined
+    this._ensureCredoScript().then(() => {
+      this._openCredoWidget({ onGranted, closeModal, email, name, loadingEl });
+    }).catch(() => {
+      if (loadingEl) loadingEl.classList.add('hidden');
+      this._showPaymentFallback({ closeModal });
+    });
+  },
+
+  _ensureCredoScript() {
+    return new Promise((resolve, reject) => {
+      // Already loaded
+      if (typeof window.CredoWidget !== 'undefined') {
+        return resolve();
+      }
+
+      // Remove any broken/stale script tag first
+      const existing = document.querySelector('script[src*="credocentral.com"]');
+      if (existing) existing.remove();
+
+      const script = document.createElement('script');
+      script.src = 'https://pay.credocentral.com/inline.js';
+      script.async = true;
+
+      const timeout = setTimeout(() => {
+        script.onload = null;
+        script.onerror = null;
+        reject(new Error('Credo script load timeout'));
+      }, 8000);
+
+      script.onload = () => {
+        clearTimeout(timeout);
+        // Give the script a tick to define CredoWidget
+        setTimeout(() => {
+          if (typeof window.CredoWidget !== 'undefined') resolve();
+          else reject(new Error('CredoWidget not defined after load'));
+        }, 300);
+      };
+      script.onerror = () => {
+        clearTimeout(timeout);
+        reject(new Error('Credo script failed to load'));
+      };
+
+      document.head.appendChild(script);
+    });
+  },
+
+  _openCredoWidget({ onGranted, closeModal, email, name, loadingEl }) {
     const publicKey = window.CREDO_PUBLIC_KEY;
     if (!publicKey || publicKey.includes('REPLACE')) {
       if (loadingEl) loadingEl.classList.add('hidden');
-      console.warn('[Paywall] Credo public key not set. Update window.CREDO_PUBLIC_KEY in index.html.');
+      console.warn('[Paywall] Credo public key not set.');
       this._showPaymentFallback({ closeModal });
       return;
     }
 
     try {
       const handler = window.CredoWidget.setup({
-        key: publicKey,           // Public key (1PUB... for live, 0PUB... for sandbox)
+        key: publicKey,
         email: email,
-        amount: PREMIUM_AMOUNT_KOBO,   // Amount in kobo (200000 = NGN 2,000)
+        amount: PREMIUM_AMOUNT_KOBO,
         currency: 'NGN',
         reference: generateRef(),
         channels: ['CARD', 'BANK_TRANSFER', 'USSD'],
@@ -170,17 +215,14 @@ export const Paywall = {
           platform: 'CBT Master',
           product: 'Premium Access (Lifetime)'
         },
-        // callBack fires when the user finishes interaction
         callBack: (response) => {
           if (loadingEl) loadingEl.classList.add('hidden');
-          // response.status will be 'success' on completion
-          if (response && (response.status === 'success' || response.status === 'PAID')) {
+          if (response && (response.status === 'success' || response.status === 'PAID' || response.status === 200)) {
             Storage.setPremium({ reference: response.reference || response.transactionRef, email });
             closeModal();
             this._showSuccessToast();
             if (onGranted) setTimeout(onGranted, 700);
           } else {
-            // Payment abandoned or failed — just close loading
             console.warn('[Paywall] Credo payment not completed:', response);
           }
         },
@@ -189,6 +231,7 @@ export const Paywall = {
         }
       });
 
+      if (loadingEl) loadingEl.classList.add('hidden');
       handler.openIframe();
     } catch (err) {
       if (loadingEl) loadingEl.classList.add('hidden');
@@ -196,6 +239,7 @@ export const Paywall = {
       this._showPaymentFallback({ closeModal });
     }
   },
+
 
   _showPaymentFallback({ closeModal }) {
     const section = document.querySelector('.pw-cta-section');

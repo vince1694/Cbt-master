@@ -602,6 +602,29 @@ app.post('/api/email/streak-reminder', async (req, res) => {
   }
 });
 
+// ── ADMIN: Wipe all users and results (protected) ──────────────────────────
+// Only callable with the correct ADMIN_SECRET header to prevent abuse
+app.delete('/api/admin/reset-users', async (req, res) => {
+  const adminSecret = (process.env.ADMIN_SECRET || 'cbt_admin_reset_2025').trim();
+  const provided = (req.headers['x-admin-secret'] || req.query.secret || '').trim();
+  if (provided !== adminSecret) {
+    return res.status(403).json({ error: 'Forbidden: invalid admin secret.' });
+  }
+  try {
+    const userResult = await User.deleteMany({});
+    const resultResult = await TestResult.deleteMany({});
+    console.log(`🗑️  Admin reset: deleted ${userResult.deletedCount} users and ${resultResult.deletedCount} test results.`);
+    res.json({
+      message: 'All users and test results deleted successfully.',
+      usersDeleted: userResult.deletedCount,
+      resultsDeleted: resultResult.deletedCount
+    });
+  } catch (err) {
+    console.error('Admin reset error:', err);
+    res.status(500).json({ error: 'Failed to reset database.' });
+  }
+});
+
 // Credo Payment Verification Endpoint
 app.post('/api/payment/verify-credo', async (req, res) => {
   try {
