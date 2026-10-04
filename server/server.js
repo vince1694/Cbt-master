@@ -183,7 +183,7 @@ function generateOtp() {
   return Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit
 }
 
-// User Registration — creates account and allows immediate login
+// User Registration — creates unverified account and sends 6-digit OTP verification code
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { name, email, password, department, targetJambScore, targetInstitution, preferredCourse } = req.body;
@@ -195,58 +195,60 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 6 characters.' });
     }
 
-    const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
-    if (existingUser) {
-      return res.status(409).json({ error: 'An account with this email address already exists. Please sign in.' });
-    }
-
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
+    const otp = generateOtp();
+    const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex');
 
-    const newUser = new User({
-      name: name.trim(),
-      email: email.toLowerCase().trim(),
-      password: hashedPassword,
-      department: department || 'Science',
-      targetJambScore: targetJambScore ? Number(targetJambScore) : 280,
-      targetInstitution: targetInstitution || 'University of Lagos (UNILAG)',
-      preferredCourse: preferredCourse || 'Computer Science',
-      isVerified: true
-    });
-    await newUser.save();
+    let user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (user) {
+      if (user.isVerified) {
+        return res.status(409).json({ error: 'An account with this email address already exists. Please sign in.' });
+      }
+      // User registered earlier but never finished verifying — update with new details & fresh code
+      user.name = name.trim();
+      user.password = hashedPassword;
+      user.department = department || user.department;
+      user.targetJambScore = targetJambScore ? Number(targetJambScore) : user.targetJambScore;
+      user.targetInstitution = targetInstitution || user.targetInstitution;
+      user.preferredCourse = preferredCourse || user.preferredCourse;
+      user.otpCode = hashedOtp;
+      user.otpExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+      user.otpAttempts = 0;
+      await user.save();
+    } else {
+      user = new User({
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        password: hashedPassword,
+        department: department || 'Science',
+        targetJambScore: targetJambScore ? Number(targetJambScore) : 280,
+        targetInstitution: targetInstitution || 'University of Lagos (UNILAG)',
+        preferredCourse: preferredCourse || 'Computer Science',
+        isVerified: false,
+        otpCode: hashedOtp,
+        otpExpires: new Date(Date.now() + 15 * 60 * 1000), // 15 mins
+        otpAttempts: 0
+      });
+      await user.save();
+    }
 
-    console.log(`✅ [REGISTER] Account created for: ${newUser.email} (${newUser.department})`);
+    console.log(`📨 [OTP-REGISTER] Verification code generated for ${user.email}: ${otp}`);
 
-    // Send Welcome Email in background (non-blocking)
-    sendWelcomeEmail({
-      to: newUser.email,
-      name: newUser.name,
-      department: newUser.department,
-      targetScore: newUser.targetJambScore,
-      institution: newUser.targetInstitution
-    }).catch(err => console.warn('Welcome email background notice:', err.message));
-
-    // Issue JWT token immediately so candidate is logged in without friction
-    const token = jwt.sign(
-      { id: newUser._id, email: newUser.email, name: newUser.name },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    // Send 6-digit verification email via Brevo
+    sendOtpEmail({
+      to: user.email,
+      name: user.name,
+      otp,
+      isResend: false
+    }).catch(err => console.error('Failed to send registration OTP email:', err.message));
 
     return res.status(201).json({
       success: true,
-      message: 'Account created successfully! Welcome to CBT Master.',
-      token,
-      user: {
-        id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        department: newUser.department,
-        targetJambScore: newUser.targetJambScore,
-        targetInstitution: newUser.targetInstitution,
-        preferredCourse: newUser.preferredCourse,
-        isPremium: false
-      }
+      requiresOtp: true,
+      email: user.email,
+      name: user.name,
+      message: 'Verification code sent to your email.'
     });
   } catch (err) {
     console.error('Registration error:', err);
@@ -323,7 +325,9 @@ app.post('/api/auth/verify-otp', async (req, res) => {
         department: user.department,
         targetJambScore: user.targetJambScore,
         targetInstitution: user.targetInstitution,
-        preferredCourse: user.preferredCourse
+        preferredCourse: user.preferredCourse,
+        isPremium: !!user.isPremium,
+        premiumReference: user.premiumReference || null
       }
     });
   } catch (err) {
@@ -390,6 +394,25 @@ app.post('/api/auth/login', async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ error: 'Invalid email address or password.' });
+    }
+
+    // Require email verification before granting access
+    if (!user.isVerified) {
+      const otp = generateOtp();
+      user.otpCode = crypto.createHash('sha256').update(otp).digest('hex');
+      user.otpExpires = new Date(Date.now() + 15 * 60 * 1000);
+      user.otpAttempts = 0;
+      await user.save();
+
+      sendOtpEmail({ to: user.email, name: user.name, otp, isResend: false })
+        .catch(err => console.error('Failed to send login OTP email:', err.message));
+
+      return res.status(403).json({
+        error: 'Your email address is not verified yet. A 6-digit verification code has been sent to your email.',
+        requiresOtp: true,
+        email: user.email,
+        name: user.name
+      });
     }
 
     const token = jwt.sign(

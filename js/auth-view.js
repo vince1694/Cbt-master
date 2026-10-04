@@ -449,6 +449,14 @@ export const AuthView = {
           return;
         }
 
+        // 🔐 Unverified account — direct to OTP screen with fresh code sent
+        if (res.status === 403 && data.requiresOtp) {
+          this._setLoading('login-submit-btn', false);
+          _cleanupHint();
+          this._showOtpScreen(data.email || email, data.name || '', onAuthSuccess);
+          return;
+        }
+
         // ❌ Server responded but credentials wrong — no point retrying
         this._setLoading('login-submit-btn', false);
         _cleanupHint();
@@ -574,8 +582,14 @@ export const AuthView = {
       this._setLoading('signup-submit-btn', false);
 
       if (res.ok) {
+        // 🔐 If server requires OTP verification, show the verification code screen
+        if (data.requiresOtp) {
+          this._showOtpScreen(data.email || email.toLowerCase(), name, onAuthSuccess);
+          return;
+        }
+
         if (data.token) {
-          // Direct seamless onboarding: log in immediately
+          // Direct seamless onboarding if token returned
           localStorage.setItem('cbt_auth_token', data.token);
           localStorage.setItem('cbt_user_email', email.toLowerCase());
           localStorage.setItem('cbt_user_name', name);
@@ -724,28 +738,60 @@ export const AuthView = {
         });
         const data = await res.json();
         if (res.ok) {
-          // Account is now verified on the server.
-          // DON'T auto-login — force user to enter password on the login page.
-          // Clear any stale session state to ensure Auth.isLoggedIn() returns false.
-          localStorage.removeItem('cbt_auth_token');
-          localStorage.removeItem('cbt_user_email');
-          localStorage.removeItem('cbt_user_name');
-          localStorage.removeItem('cbtmaster_session');
-          localStorage.removeItem('cbtmaster_current_user');
+          if (data.token) {
+            // Save verified session and launch dashboard immediately
+            localStorage.setItem('cbt_auth_token', data.token);
+            localStorage.setItem('cbt_user_email', email.toLowerCase());
+            if (data.user && data.user.name) localStorage.setItem('cbt_user_name', data.user.name);
+            const userId = (data.user && (data.user.id || data.user._id)) || 'cloud_' + Date.now();
+            localStorage.setItem('cbtmaster_session', JSON.stringify({
+              userId,
+              createdAt: Date.now(),
+              expiry: Date.now() + (30 * 24 * 60 * 60 * 1000)
+            }));
+            Auth.syncUserFromCloud(data.user, userId);
+            if (data.user) {
+              Storage.updateUserProfile({
+                name: data.user.name || email.split('@')[0],
+                email: data.user.email || email.toLowerCase(),
+                department: data.user.department || 'Science',
+                targetJambScore: data.user.targetJambScore || 280,
+                targetInstitution: data.user.targetInstitution || 'University of Lagos (UNILAG)',
+                preferredCourse: data.user.preferredCourse || 'Computer Science'
+              });
+              if (data.user.isPremium) {
+                Storage.setPremium({
+                  reference: data.user.premiumReference || 'cloud_synced',
+                  email: email.toLowerCase()
+                });
+              }
+            }
 
+            const successMsg = document.getElementById('otp-success-msg');
+            if (successMsg) {
+              successMsg.textContent = '✓ Email verified! Welcome to CBT Master 🎉';
+              successMsg.classList.remove('hidden');
+            }
+            boxes.forEach(b => { b.disabled = true; b.style.borderColor = 'rgba(16,185,129,0.8)'; });
+
+            setTimeout(() => {
+              this._animateSuccess(() => onAuthSuccess(data.user || { name, email }));
+            }, 1000);
+            return;
+          }
+
+          // Fallback if no token in response: redirect to login page
+          localStorage.removeItem('cbt_auth_token');
+          localStorage.removeItem('cbtmaster_session');
           const successMsg = document.getElementById('otp-success-msg');
           if (successMsg) {
             successMsg.textContent = '✓ Email verified! Redirecting to Sign In…';
             successMsg.classList.remove('hidden');
           }
-          boxes.forEach(b => { b.disabled = true; b.style.borderColor = 'rgba(0,200,150,0.6)'; });
+          boxes.forEach(b => { b.disabled = true; b.style.borderColor = 'rgba(16,185,129,0.8)'; });
 
-          // Redirect to login page after a short delay
           setTimeout(() => {
-            // Re-render auth page (clean state, no session)
             this.render(this._containerId, onAuthSuccess);
-
-            // Ensure login section is visible, not signup
             const loginSection = document.getElementById("login-section");
             const signupSection = document.getElementById("signup-section");
             const formCard = document.getElementById("auth-form-card");
@@ -754,19 +800,13 @@ export const AuthView = {
               loginSection.classList.remove("hidden");
               formCard?.classList.remove("signup-mode");
             }
-
-            // Pre-fill the verified email
             const emailInput = document.getElementById('login-email');
             if (emailInput) emailInput.value = email;
-
-            // Show success banner
             const successBox = document.getElementById('login-success-box');
             if (successBox) {
               successBox.innerHTML = `🎉 <strong>Account verified!</strong><br>Enter your password to sign in to your dashboard.`;
               successBox.classList.remove('hidden');
             }
-
-            // Focus the password field for quick sign-in
             setTimeout(() => document.getElementById('login-password')?.focus(), 100);
           }, 1200);
         } else {
