@@ -357,118 +357,133 @@ export const AuthView = {
 
     this._setLoading('login-submit-btn', true);
 
-    // Show progressive loading messages for slow connections / cold starts
     const loginBtn = document.getElementById('login-submit-btn');
-    const spinnerMsgEl = loginBtn?.querySelector('.btn-spinner');
-    let warmUpTimer = null;
-    warmUpTimer = setTimeout(() => {
-      const btnText = loginBtn?.querySelector('.btn-text');
-      if (btnText && !loginBtn?.disabled) return;
-      // Already loading — show warm-up hint after 4s
-      const existingHint = document.getElementById('login-warmup-hint');
-      if (!existingHint) {
-        const hint = document.createElement('div');
+
+    // Helper: show / update the warm-up hint below the button
+    const _setHint = (msg) => {
+      let hint = document.getElementById('login-warmup-hint');
+      if (!hint) {
+        hint = document.createElement('div');
         hint.id = 'login-warmup-hint';
-        hint.style.cssText = 'text-align:center;color:rgba(255,255,255,0.5);font-size:0.8rem;margin-top:8px;';
-        hint.textContent = '⏳ Server is warming up, please wait a moment…';
+        hint.style.cssText = [
+          'text-align:center',
+          'color:rgba(255,255,255,0.65)',
+          'font-size:0.82rem',
+          'margin-top:10px',
+          'line-height:1.5',
+          'padding:8px 12px',
+          'background:rgba(16,185,129,0.08)',
+          'border:1px solid rgba(16,185,129,0.2)',
+          'border-radius:8px'
+        ].join(';');
         loginBtn?.parentNode?.insertBefore(hint, loginBtn.nextSibling);
       }
-    }, 4000);
-
+      hint.textContent = msg;
+    };
     const _cleanupHint = () => {
-      clearTimeout(warmUpTimer);
       document.getElementById('login-warmup-hint')?.remove();
     };
 
-    try {
-      // Extended timeout to 20s to accommodate Vercel serverless cold starts
-      const res = await fetch(`${Api._base()}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.toLowerCase(), password }),
-        signal: AbortSignal.timeout(20000)
-      });
-      _cleanupHint();
+    // Auto-retry up to 3 times — handles Render free-tier cold starts (30-60s wake time)
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 8000;  // 8s between retries
+    const PER_TRY_TIMEOUT = 18000; // 18s per attempt
 
-      const data = await res.json().catch(() => ({}));
-
-      // Unverified account — send to OTP screen
-      if (res.status === 403 && data.requiresOtp) {
-        this._setLoading('login-submit-btn', false);
-        this._showOtpScreen(data.email || email, '', onAuthSuccess);
-        return;
-      }
-
-      // ✅ Successful cloud login
-      if (res.ok && data.token) {
-        localStorage.setItem('cbt_auth_token', data.token);
-        localStorage.setItem('cbt_user_email', email.toLowerCase());
-        if (data.user && data.user.name) {
-          localStorage.setItem('cbt_user_name', data.user.name);
-        }
-        const userId = (data.user && (data.user.id || data.user._id)) || 'cloud_' + Date.now();
-        localStorage.setItem('cbtmaster_session', JSON.stringify({
-          userId,
-          createdAt: Date.now(),
-          expiry: Date.now() + (30 * 24 * 60 * 60 * 1000)
-        }));
-
-        // Sync cloud user into local offline store
-        Auth.syncUserFromCloud(data.user, userId);
-
-        // Always update the profile — ensures dashboard shows real user data
-        if (data.user) {
-          Storage.updateUserProfile({
-            name: data.user.name || email.split('@')[0],
-            email: data.user.email || email.toLowerCase(),
-            department: data.user.department || 'Science',
-            targetJambScore: data.user.targetJambScore || 280,
-            targetInstitution: data.user.targetInstitution || 'University of Lagos (UNILAG)',
-            preferredCourse: data.user.preferredCourse || 'Computer Science'
-          });
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        if (attempt === 1) {
+          // Show hint after 5s on first attempt
+          setTimeout(() => {
+            if (document.getElementById('login-submit-btn')?.disabled) {
+              _setHint('⏳ Server is waking up — this takes up to 30 seconds on first visit. Please hold on…');
+            }
+          }, 5000);
+        } else {
+          _setHint(`🔄 Retrying… (attempt ${attempt} of ${MAX_RETRIES})`);
         }
 
-        this._setLoading('login-submit-btn', false);
-        this._animateSuccess(() => onAuthSuccess(data.user || { name: data.user?.name || email.split('@')[0], email }));
-        return;
-      }
+        const res = await fetch(`${Api._base()}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.toLowerCase(), password }),
+          signal: AbortSignal.timeout(PER_TRY_TIMEOUT)
+        });
+        _cleanupHint();
 
-      // ❌ Server returned an error (wrong password, not found, etc.)
-      this._setLoading('login-submit-btn', false);
-      const serverError = data.error || 'Invalid email address or password.';
+        const data = await res.json().catch(() => ({}));
 
-      if (res.status === 401) {
-        const localResult = Auth.login({ email, password });
-        if (localResult.success) {
-          this._animateSuccess(() => onAuthSuccess(localResult.user));
+        // ✅ Successful login
+        if (res.ok && data.token) {
+          localStorage.setItem('cbt_auth_token', data.token);
+          localStorage.setItem('cbt_user_email', email.toLowerCase());
+          if (data.user && data.user.name) {
+            localStorage.setItem('cbt_user_name', data.user.name);
+          }
+          const userId = (data.user && (data.user.id || data.user._id)) || 'cloud_' + Date.now();
+          localStorage.setItem('cbtmaster_session', JSON.stringify({
+            userId,
+            createdAt: Date.now(),
+            expiry: Date.now() + (30 * 24 * 60 * 60 * 1000)
+          }));
+          Auth.syncUserFromCloud(data.user, userId);
+          if (data.user) {
+            Storage.updateUserProfile({
+              name: data.user.name || email.split('@')[0],
+              email: data.user.email || email.toLowerCase(),
+              department: data.user.department || 'Science',
+              targetJambScore: data.user.targetJambScore || 280,
+              targetInstitution: data.user.targetInstitution || 'University of Lagos (UNILAG)',
+              preferredCourse: data.user.preferredCourse || 'Computer Science'
+            });
+          }
+          this._setLoading('login-submit-btn', false);
+          this._animateSuccess(() => onAuthSuccess(data.user || { name: data.user?.name || email.split('@')[0], email }));
           return;
         }
-        this._showError('login-error-box', data.error || 'Invalid email address or password.');
+
+        // ❌ Server responded but credentials wrong — no point retrying
+        this._setLoading('login-submit-btn', false);
+        _cleanupHint();
+        if (res.status === 401) {
+          // Try offline cache as last resort
+          const localResult = Auth.login({ email, password });
+          if (localResult.success) {
+            this._animateSuccess(() => onAuthSuccess(localResult.user));
+            return;
+          }
+          this._showError('login-error-box', data.error || 'Incorrect email or password. Please check and try again.');
+        } else {
+          this._showError('login-error-box', data.error || 'Could not sign in. Please try again.');
+        }
         return;
+
+      } catch (err) {
+        // Timeout or network failure
+        const isLastAttempt = attempt === MAX_RETRIES;
+        console.warn(`[Auth] Login attempt ${attempt} failed:`, err.message);
+
+        if (!isLastAttempt) {
+          // Wait before retrying
+          _setHint(`⏳ Server is still starting up… retrying in ${RETRY_DELAY / 1000}s (${attempt}/${MAX_RETRIES})`);
+          await new Promise(r => setTimeout(r, RETRY_DELAY));
+        } else {
+          // All retries exhausted
+          _cleanupHint();
+          this._setLoading('login-submit-btn', false);
+
+          // Offline cache fallback
+          const localResult = Auth.login({ email, password });
+          if (localResult.success) {
+            this._animateSuccess(() => onAuthSuccess(localResult.user));
+            return;
+          }
+
+          this._showError(
+            'login-error-box',
+            '🔄 The server is taking longer than usual to start. Please wait 30 seconds and tap Sign In again.'
+          );
+        }
       }
-
-      this._showError('login-error-box', serverError);
-
-    } catch (err) {
-      // Network failure or timeout
-      _cleanupHint();
-      console.warn('[Auth] Cloud login network error:', err.message);
-      this._setLoading('login-submit-btn', false);
-
-      // If user previously registered offline, allow cached login
-      const localResult = Auth.login({ email, password });
-      if (localResult.success) {
-        this._animateSuccess(() => onAuthSuccess(localResult.user));
-        return;
-      }
-
-      const isTimeout = err.name === 'TimeoutError' || err.name === 'AbortError';
-      this._showError(
-        'login-error-box',
-        isTimeout
-          ? '⏱ The server is taking too long to respond. Please try again in a few seconds.'
-          : '📶 Unable to connect to the server. Please check your internet connection and try again.'
-      );
     }
   },
 

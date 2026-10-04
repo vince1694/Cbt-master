@@ -38,21 +38,31 @@ export const Api = {
 
   /**
    * Check if backend API server is reachable.
+   * On Render free tier, server sleeps after inactivity — this pings it
+   * aggressively with retries to wake it before the user tries to log in.
    */
   async checkServerHealth() {
-    try {
-      const res = await fetch(`${API_BASE}/health`, {
-        method: 'GET',
-        headers: { 'Accept': 'application/json' },
-        signal: AbortSignal.timeout(6000) // 6s timeout allows serverless functions to warm up
-      });
-      if (res.ok) {
-        this.isOnline = true;
-        return true;
+    const MAX_ATTEMPTS = 8;   // retry for up to ~56s
+    const DELAY_MS     = 7000; // 7s between each attempt
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        const res = await fetch(`${API_BASE}/health`, {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+          signal: AbortSignal.timeout(8000)
+        });
+        if (res.ok) {
+          this.isOnline = true;
+          return true;
+        }
+      } catch {
+        // server still waking — wait then retry
+        if (attempt < MAX_ATTEMPTS) {
+          await new Promise(r => setTimeout(r, DELAY_MS));
+        }
       }
-    } catch {
-      this.isOnline = false;
     }
+    this.isOnline = false;
     return false;
   },
 

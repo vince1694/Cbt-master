@@ -162,10 +162,7 @@ export const ProfileView = {
     document.getElementById('profile-back-btn')?.addEventListener('click', onBack);
 
     document.getElementById('profile-logout-btn')?.addEventListener('click', () => {
-      if (confirm('Sign out of CBT Master?')) {
-        Auth.logout();
-        onLogout();
-      }
+      onLogout();
     });
 
     // Profile edit form

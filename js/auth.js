@@ -85,6 +85,7 @@ export const Auth = {
     localStorage.removeItem('cbt_auth_token');
     localStorage.removeItem('cbt_user_email');
     localStorage.removeItem('cbt_user_name');
+    localStorage.removeItem('jamb_waec_user_profile');
   },
 
   // ─── User Database ───────────────────────────────────────────────
