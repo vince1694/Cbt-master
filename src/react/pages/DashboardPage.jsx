@@ -94,12 +94,12 @@ export const DashboardPage = ({
         alignItems: 'center', 
         flexWrap: 'wrap', 
         gap: '1.5rem',
-        background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        background: 'var(--surface-base)',
+        border: '1px solid var(--border-medium)',
         borderRadius: '16px',
         padding: '1.75rem',
         marginBottom: '2rem',
-        backdropFilter: 'blur(10px)'
+        boxShadow: 'var(--shadow-sm)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           <div style={{
@@ -120,7 +120,7 @@ export const DashboardPage = ({
 
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-              <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff', margin: 0 }}>
+              <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
                 {candidateName}
               </h1>
               <span style={{
@@ -142,12 +142,12 @@ export const DashboardPage = ({
               </span>
             </div>
 
-            <p style={{ margin: '6px 0 0', color: '#94a3b8', fontSize: '0.9rem' }}>
-              Aspiring for <strong style={{ color: '#f1f5f9' }}>{profile.preferredCourse}</strong> at <strong style={{ color: '#f1f5f9' }}>{profile.targetInstitution}</strong>
+            <p style={{ margin: '6px 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+              Aspiring for <strong style={{ color: 'var(--text-primary)' }}>{profile.preferredCourse}</strong> at <strong style={{ color: 'var(--text-primary)' }}>{profile.targetInstitution}</strong>
             </p>
 
             {candidateEmail && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px', fontSize: '0.8rem', color: '#64748b' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px', fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
                 <span>✉️ {candidateEmail}</span>
                 <span>•</span>
                 <span style={{ color: '#10b981', fontWeight: 600 }}>Active MERN Cloud Session</span>
@@ -162,8 +162,8 @@ export const DashboardPage = ({
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            background: 'rgba(245, 158, 11, 0.1)',
-            border: '1px solid rgba(245, 158, 11, 0.25)',
+            background: 'rgba(245, 158, 11, 0.12)',
+            border: '1px solid rgba(245, 158, 11, 0.3)',
             padding: '8px 14px',
             borderRadius: '12px',
             color: '#f59e0b'
@@ -171,7 +171,7 @@ export const DashboardPage = ({
             <IconFlame size={20} />
             <div>
               <div style={{ fontWeight: 800, fontSize: '0.95rem', lineHeight: 1 }}>{profile.streakDays || 1} Days</div>
-              <div style={{ fontSize: '0.72rem', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Study Streak</div>
+              <div style={{ fontSize: '0.72rem', color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Study Streak</div>
             </div>
           </div>
 
@@ -181,9 +181,9 @@ export const DashboardPage = ({
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              color: '#cbd5e1',
+              background: 'var(--surface-elevated)',
+              border: '1px solid var(--border-medium)',
+              color: 'var(--text-secondary)',
               padding: '10px 14px',
               borderRadius: '12px',
               cursor: 'pointer',
@@ -203,7 +203,7 @@ export const DashboardPage = ({
               gap: '6px',
               background: 'rgba(239, 68, 68, 0.1)',
               border: '1px solid rgba(239, 68, 68, 0.25)',
-              color: '#f87171',
+              color: '#ef4444',
               padding: '10px 14px',
               borderRadius: '12px',
               cursor: 'pointer',
@@ -222,25 +222,26 @@ export const DashboardPage = ({
         
         {/* Readiness Meter Card */}
         <div style={{
-          background: 'rgba(30, 41, 59, 0.5)',
-          border: '1px solid rgba(255, 255, 255, 0.06)',
+          background: 'var(--surface-base)',
+          border: '1px solid var(--border-medium)',
           borderRadius: '14px',
-          padding: '1.5rem'
+          padding: '1.5rem',
+          boxShadow: 'var(--shadow-sm)'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 600 }}>JAMB Target Readiness</span>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>JAMB Target Readiness</span>
             <span style={{ color: '#10b981', fontWeight: 800 }}>{progressRatio}%</span>
           </div>
 
-          <div style={{ height: '8px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '4px', overflow: 'hidden', marginBottom: '1rem' }}>
+          <div style={{ height: '8px', background: 'var(--surface-highlight)', borderRadius: '4px', overflow: 'hidden', marginBottom: '1rem' }}>
             <div style={{ width: `${progressRatio}%`, height: '100%', background: 'linear-gradient(90deg, #10b981, #059669)', transition: 'width 0.5s ease' }} />
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-            <span style={{ color: '#94a3b8' }}>
-              Projected Score: <strong style={{ color: '#fff' }}>{projectedScore > 0 ? `${projectedScore} / 400` : 'Take 1 exam'}</strong>
+            <span style={{ color: 'var(--text-secondary)' }}>
+              Projected Score: <strong style={{ color: 'var(--text-primary)' }}>{projectedScore > 0 ? `${projectedScore} / 400` : 'Take 1 exam'}</strong>
             </span>
-            <span style={{ color: '#94a3b8' }}>
+            <span style={{ color: 'var(--text-secondary)' }}>
               Goal: <strong style={{ color: '#10b981' }}>{targetScore} / 400</strong>
             </span>
           </div>
@@ -248,10 +249,11 @@ export const DashboardPage = ({
 
         {/* Exams Completed */}
         <div style={{
-          background: 'rgba(30, 41, 59, 0.5)',
-          border: '1px solid rgba(255, 255, 255, 0.06)',
+          background: 'var(--surface-base)',
+          border: '1px solid var(--border-medium)',
           borderRadius: '14px',
           padding: '1.5rem',
+          boxShadow: 'var(--shadow-sm)',
           display: 'flex',
           alignItems: 'center',
           gap: '1rem'
@@ -260,17 +262,18 @@ export const DashboardPage = ({
             <IconBook size={24} />
           </div>
           <div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff' }}>{testsTaken}</div>
-            <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Completed Practice Tests</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>{testsTaken}</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Completed Practice Tests</div>
           </div>
         </div>
 
         {/* Average Accuracy */}
         <div style={{
-          background: 'rgba(30, 41, 59, 0.5)',
-          border: '1px solid rgba(255, 255, 255, 0.06)',
+          background: 'var(--surface-base)',
+          border: '1px solid var(--border-medium)',
           borderRadius: '14px',
           padding: '1.5rem',
+          boxShadow: 'var(--shadow-sm)',
           display: 'flex',
           alignItems: 'center',
           gap: '1rem'
@@ -279,17 +282,17 @@ export const DashboardPage = ({
             <IconShieldCheck size={24} />
           </div>
           <div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>
               {testsTaken > 0 ? `${avgPercentage}%` : '—'}
             </div>
-            <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Average Accuracy</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Average Accuracy</div>
           </div>
         </div>
 
       </div>
 
       {/* Main Practice Actions Grid */}
-      <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff', marginBottom: '1rem' }}>
+      <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>
         Start Exam Simulation &amp; Study
       </h2>
 
@@ -297,23 +300,24 @@ export const DashboardPage = ({
         
         {/* Full JAMB CBT Simulator Launcher */}
         <div style={{
-          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(6, 78, 59, 0.25) 100%)',
-          border: '1px solid rgba(16, 185, 129, 0.35)',
+          background: 'var(--surface-base)',
+          border: '1.5px solid var(--border-medium)',
           borderRadius: '16px',
           padding: '1.75rem',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          gap: '1rem'
+          gap: '1rem',
+          boxShadow: 'var(--shadow-sm)'
         }}>
           <div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '6px', background: '#10b981', color: '#022c22', fontSize: '0.75rem', fontWeight: 800, marginBottom: '12px' }}>
               OFFICIAL 4-SUBJECT SIMULATION
             </div>
-            <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#fff', margin: '0 0 8px' }}>
+            <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 8px' }}>
               Full JAMB UTME Simulator
             </h3>
-            <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.88rem', lineHeight: 1.5 }}>
+            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.5 }}>
               Experience the real JAMB test environment: 180 questions, 2-hour official countdown timer, 8-key keyboard shortcuts (A, B, C, D, P, N, S, R) and on-screen calculator.
             </p>
           </div>
@@ -343,23 +347,24 @@ export const DashboardPage = ({
 
         {/* Single Subject Practice */}
         <div style={{
-          background: 'rgba(30, 41, 59, 0.5)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          background: 'var(--surface-base)',
+          border: '1.5px solid var(--border-medium)',
           borderRadius: '16px',
           padding: '1.75rem',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          gap: '1rem'
+          gap: '1rem',
+          boxShadow: 'var(--shadow-sm)'
         }}>
           <div>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '6px', background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', fontSize: '0.75rem', fontWeight: 800, marginBottom: '12px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '6px', background: 'rgba(59, 130, 246, 0.15)', color: '#2563eb', fontSize: '0.75rem', fontWeight: 800, marginBottom: '12px' }}>
               DIAGNOSTIC PRACTICE
             </div>
-            <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#fff', margin: '0 0 8px' }}>
+            <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 8px' }}>
               Single Subject Practice
             </h3>
-            <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.88rem', lineHeight: 1.5 }}>
+            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.5 }}>
               Drill down on specific subjects like Use of English, Mathematics, Physics, Chemistry, Literature, or Economics with instant answer explanations.
             </p>
           </div>
@@ -371,9 +376,9 @@ export const DashboardPage = ({
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
-              background: 'rgba(255, 255, 255, 0.08)',
-              color: '#fff',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              background: 'var(--surface-elevated)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-medium)',
               padding: '12px 20px',
               borderRadius: '10px',
               fontWeight: 700,
@@ -387,23 +392,24 @@ export const DashboardPage = ({
 
         {/* Compulsory Novel Study Hub */}
         <div style={{
-          background: 'rgba(30, 41, 59, 0.5)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          background: 'var(--surface-base)',
+          border: '1.5px solid var(--border-medium)',
           borderRadius: '16px',
           padding: '1.75rem',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          gap: '1rem'
+          gap: '1rem',
+          boxShadow: 'var(--shadow-sm)'
         }}>
           <div>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '6px', background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', fontSize: '0.75rem', fontWeight: 800, marginBottom: '12px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '6px', background: 'rgba(245, 158, 11, 0.15)', color: '#d97706', fontSize: '0.75rem', fontWeight: 800, marginBottom: '12px' }}>
               MANDATORY UTME LITERATURE
             </div>
-            <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#fff', margin: '0 0 8px' }}>
+            <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 8px' }}>
               Compulsory Novel Hub
             </h3>
-            <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.88rem', lineHeight: 1.5 }}>
+            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.5 }}>
               Read chapter summaries, character analyses, themes, and past questions for the compulsory JAMB literature novels.
             </p>
           </div>
@@ -415,9 +421,9 @@ export const DashboardPage = ({
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
-              background: 'rgba(255, 255, 255, 0.08)',
-              color: '#fff',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              background: 'var(--surface-elevated)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-medium)',
               padding: '12px 20px',
               borderRadius: '10px',
               fontWeight: 700,
@@ -433,19 +439,19 @@ export const DashboardPage = ({
       </div>
 
       {/* Recent Practice History Table */}
-      <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff', marginBottom: '1rem' }}>
+      <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>
         Recent Practice Exam History
       </h2>
 
       {testHistory.length === 0 ? (
         <div style={{
-          background: 'rgba(30, 41, 59, 0.3)',
-          border: '1px dashed rgba(255, 255, 255, 0.12)',
+          background: 'var(--surface-base)',
+          border: '1px dashed var(--border-medium)',
           borderRadius: '14px',
           padding: '2.5rem',
           textAlign: 'center'
         }}>
-          <p style={{ color: '#94a3b8', margin: '0 0 1rem', fontSize: '0.95rem' }}>
+          <p style={{ color: 'var(--text-secondary)', margin: '0 0 1rem', fontSize: '0.95rem' }}>
             No exams taken yet. Start your first JAMB or single-subject simulation to see your diagnostic reports!
           </p>
           <button
@@ -465,14 +471,15 @@ export const DashboardPage = ({
         </div>
       ) : (
         <div style={{
-          background: 'rgba(30, 41, 59, 0.4)',
-          border: '1px solid rgba(255, 255, 255, 0.06)',
+          background: 'var(--surface-base)',
+          border: '1px solid var(--border-medium)',
           borderRadius: '14px',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          boxShadow: 'var(--shadow-sm)'
         }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
             <thead>
-              <tr style={{ background: 'rgba(255, 255, 255, 0.03)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: '#94a3b8' }}>
+              <tr style={{ background: 'var(--surface-elevated)', borderBottom: '1px solid var(--border-medium)', color: 'var(--text-secondary)' }}>
                 <th style={{ padding: '12px 16px' }}>Exam Title</th>
                 <th style={{ padding: '12px 16px' }}>Score</th>
                 <th style={{ padding: '12px 16px' }}>Projected UTME</th>
@@ -482,8 +489,8 @@ export const DashboardPage = ({
             </thead>
             <tbody>
               {testHistory.slice(0, 8).map((test, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
-                  <td style={{ padding: '12px 16px', color: '#fff', fontWeight: 600 }}>
+                <tr key={i} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                  <td style={{ padding: '12px 16px', color: 'var(--text-primary)', fontWeight: 600 }}>
                     {test.examTitle || 'JAMB UTME Simulation'}
                   </td>
                   <td style={{ padding: '12px 16px' }}>
@@ -492,7 +499,7 @@ export const DashboardPage = ({
                       borderRadius: '6px',
                       fontWeight: 700,
                       background: test.percentage >= 60 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                      color: test.percentage >= 60 ? '#34d399' : '#f87171'
+                      color: test.percentage >= 60 ? '#059669' : '#ef4444'
                     }}>
                       {test.score} / {test.totalQuestions || test.total} ({test.percentage}%)
                     </span>
@@ -500,18 +507,32 @@ export const DashboardPage = ({
                   <td style={{ padding: '12px 16px', color: '#10b981', fontWeight: 700 }}>
                     {test.scaledJambScore || Math.round((test.percentage / 100) * 400)} / 400
                   </td>
-                  <td style={{ padding: '12px 16px', color: '#94a3b8' }}>
+                  <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>
                     {new Date(test.date || Date.now()).toLocaleDateString()}
                   </td>
                   <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                     <button
                       onClick={() => onReviewTest(test)}
                       style={{
-                        background: 'rgba(255, 255, 255, 0.08)',
-                        border: 'none',
-                        color: '#cbd5e1',
+                        background: 'var(--surface-elevated)',
+                        border: '1px solid var(--border-medium)',
+                        color: 'var(--text-primary)',
                         padding: '6px 12px',
                         borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '0.82rem',
+                        fontWeight: 600
+                      }}
+                    >
+                      Review
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
                         cursor: 'pointer',
                         fontSize: '0.82rem',
                         fontWeight: 600

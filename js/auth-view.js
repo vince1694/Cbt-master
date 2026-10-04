@@ -585,7 +585,7 @@ export const AuthView = {
       if (res.ok) {
         // 🔐 If server requires OTP verification, show the verification code screen
         if (data.requiresOtp) {
-          this._showOtpScreen(data.email || email.toLowerCase(), name, onAuthSuccess);
+          this._showOtpScreen(data.email || email.toLowerCase(), name, onAuthSuccess, data.emailWarning || null);
           return;
         }
 
@@ -640,9 +640,30 @@ export const AuthView = {
     }
   },
 
-  _showOtpScreen(email, name, onAuthSuccess) {
+  _showOtpScreen(email, name, onAuthSuccess, emailWarning = null) {
     const formCard = document.getElementById('auth-form-card');
     if (!formCard) return;
+
+    const warningBanner = emailWarning ? `
+      <div id="otp-email-warning" style="
+        background:rgba(245,158,11,0.12);
+        border:1.5px solid rgba(245,158,11,0.45);
+        border-radius:10px;
+        padding:12px 14px;
+        font-size:0.85rem;
+        color:#d97706;
+        line-height:1.5;
+        display:flex;
+        align-items:flex-start;
+        gap:10px;
+        margin:4px 0 8px;
+      ">
+        <span style="font-size:1.2rem;flex-shrink:0;">⚠️</span>
+        <div>
+          <strong style="display:block;margin-bottom:3px;color:#b45309;">Email delivery issue detected</strong>
+          ${emailWarning}
+        </div>
+      </div>` : '';
 
     formCard.innerHTML = `
       <div class="auth-form-section" id="otp-section">
@@ -654,6 +675,7 @@ export const AuthView = {
             <strong style="color:var(--jamb-emerald);font-size:1.02rem;">${email}</strong>
           </p>
         </div>
+        ${warningBanner}
         <div class="otp-help-tip">
           <span style="font-size:1.15rem;line-height:1;">💡</span>
           <span><strong>Cannot find the email?</strong> Check your <strong>Spam</strong>, <strong>Junk</strong>, or <strong>Promotions</strong> folder. On phones, Gmail often routes automated codes there.</span>
@@ -679,8 +701,8 @@ export const AuthView = {
         </button>
         <div class="otp-resend-row">
           <span class="otp-resend-prompt">Didn't get it?</span>
-          <button class="otp-resend-btn" id="otp-resend-btn" disabled>
-            Resend code (<span id="otp-countdown">60</span>s)
+          <button class="otp-resend-btn" id="otp-resend-btn" ${emailWarning ? '' : 'disabled'}>
+            ${emailWarning ? 'Resend code now' : `Resend code (<span id="otp-countdown">60</span>s)`}
           </button>
         </div>
         <button class="auth-switch-link" id="otp-back-btn" style="margin-top:8px;display:block;width:100%;text-align:center;">
@@ -847,21 +869,30 @@ export const AuthView = {
   _startOtpResend(email, boxes) {
     const resendBtn = document.getElementById('otp-resend-btn');
     const countdownEl = document.getElementById('otp-countdown');
-    if (!resendBtn || !countdownEl) return;
-    resendBtn.disabled = true;
-    let secs = 60;
-    countdownEl.textContent = secs;
-    const timer = setInterval(() => {
-      secs--;
+    if (!resendBtn) return;
+
+    // If button is already enabled (emailWarning path), skip the countdown
+    const alreadyEnabled = !resendBtn.disabled;
+    let timer = null;
+
+    if (!alreadyEnabled) {
+      // Normal path: start 60s countdown
+      resendBtn.disabled = true;
+      let secs = 60;
       if (countdownEl) countdownEl.textContent = secs;
-      if (secs <= 0) {
-        clearInterval(timer);
-        if (resendBtn) {
-          resendBtn.disabled = false;
-          resendBtn.innerHTML = 'Resend code';
+      timer = setInterval(() => {
+        secs--;
+        if (countdownEl) countdownEl.textContent = secs;
+        if (secs <= 0) {
+          clearInterval(timer);
+          if (resendBtn) {
+            resendBtn.disabled = false;
+            resendBtn.innerHTML = 'Resend code';
+          }
         }
-      }
-    }, 1000);
+      }, 1000);
+    }
+
     resendBtn.onclick = async () => {
       resendBtn.disabled = true;
       resendBtn.textContent = 'Sending…';
@@ -870,14 +901,24 @@ export const AuthView = {
         const res = await fetch(`${Api._base()}/auth/resend-otp`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
+          body: JSON.stringify({ email }),
+          signal: AbortSignal.timeout(15000)
         });
         const data = await res.json();
         if (res.ok) {
+          // Remove warning banner if it exists
+          document.getElementById('otp-email-warning')?.remove();
           if (boxes) boxes.forEach(b => b.value = '');
           if (boxes && boxes[0]) boxes[0].focus();
           if (errBox) errBox.classList.add('hidden');
-          clearInterval(timer);
+          if (timer) clearInterval(timer);
+          // Show a brief success flash
+          const successMsg = document.getElementById('otp-success-msg');
+          if (successMsg) {
+            successMsg.textContent = '📧 New code sent! Check your email.';
+            successMsg.classList.remove('hidden');
+            setTimeout(() => successMsg.classList.add('hidden'), 3500);
+          }
           this._startOtpResend(email, boxes);
         } else {
           if (errBox) { errBox.textContent = data.error || 'Could not resend code.'; errBox.classList.remove('hidden'); }

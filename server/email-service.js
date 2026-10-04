@@ -337,24 +337,25 @@ async function sendEmail({ to, name, subject, html }) {
     console.warn('[Brevo REST] Direct call error, trying SDK fallback:', directErr.message);
   }
 
-  // 2. Fallback to Brevo SDK
+  // 2. Fallback to Brevo SDK (v6: returns body object directly, no .body wrapper)
   try {
     const brevoPromise = getBrevo().transactionalEmails.sendTransacEmail({
       sender,
-      to: [{ email: to, name }],
+      to: [{ email: to, name: name || 'Candidate' }],
       subject,
       htmlContent: html
     });
-    // 8-second timeout to prevent serverless function hangs
+    // 10-second timeout to prevent serverless function hangs
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Brevo email API request timed out (8s limit)')), 8000)
+      setTimeout(() => reject(new Error('Brevo email API request timed out (10s limit)')), 10000)
     );
     const res = await Promise.race([brevoPromise, timeoutPromise]);
-    const messageId = res?.messageId || res?.body?.messageId || 'sent';
-    console.log(`📧 [Brevo SDK] Email sent → ${to} | "${subject}"`);
+    // Brevo SDK v6: response is the parsed body object directly
+    const messageId = (res && (res.messageId || res.message_id)) || 'sent';
+    console.log(`📧 [Brevo SDK] Email sent → ${to} | "${subject}" | id:${messageId}`);
     return { success: true, messageId };
   } catch (err) {
-    console.error(`❌ Email failed → ${to}:`, err?.message || err);
+    console.error(`❌ [Brevo SDK] Email failed → ${to} | "${subject}":`, err?.message || err);
     return { success: false, error: err?.message || String(err) };
   }
 }

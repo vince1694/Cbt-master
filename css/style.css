@@ -42,9 +42,9 @@
   --status-warning: #f59e0b;
   --status-danger: #ef4444;
 
-  /* Fonts */
-  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  /* Fonts — Apple iOS SF Pro System Stack */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro", -system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: -apple-system-ui-monospaced, "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
 
   /* Geometry & Physics */
   --radius-xs: 6px;
@@ -63,30 +63,34 @@
   --transition-smooth: 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* High-Contrast, Visible Light Mode (iOS-Inspired Clean Aesthetics) */
 [data-theme="light"] {
-  --canvas-bg: #f8fafc;
+  --canvas-bg: #f2f5f9;
   --surface-base: #ffffff;
-  --surface-elevated: #f1f5f9;
-  --surface-highlight: #e2e8f0;
-  --surface-overlay: rgba(255, 255, 255, 0.92);
+  --surface-elevated: #f8fafc;
+  --surface-highlight: #edf2f7;
+  --surface-overlay: rgba(255, 255, 255, 0.96);
 
   --border-subtle: #e2e8f0;
   --border-medium: #cbd5e1;
-  --border-strong: #94a3b8;
+  --border-strong: #64748b;
 
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-tertiary: #64748b;
+  /* Deep, crisp text contrast — completely visible and sharp */
+  --text-primary: #090d16;
+  --text-secondary: #1e293b;
+  --text-tertiary: #475569;
 
-  --jamb-surface: rgba(16, 185, 129, 0.08);
-  --jamb-border: rgba(16, 185, 129, 0.35);
+  --jamb-emerald: #059669;
+  --jamb-surface: rgba(5, 150, 105, 0.1);
+  --jamb-border: rgba(5, 150, 105, 0.4);
 
-  --waec-surface: rgba(59, 130, 246, 0.08);
-  --waec-border: rgba(59, 130, 246, 0.35);
+  --waec-blue: #2563eb;
+  --waec-surface: rgba(37, 99, 235, 0.1);
+  --waec-border: rgba(37, 99, 235, 0.4);
 
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.07);
-  --shadow-lg: 0 10px 25px -4px rgba(0, 0, 0, 0.1);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 14px -2px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 28px -4px rgba(0, 0, 0, 0.12);
 }
 
 /* Base Styles */
@@ -516,3 +520,464 @@ button {
   .header-inner { padding: 0.75rem 1rem; }
   .brand-sub { display: none; }
 }
+
+/* ==========================================================================
+   ENHANCED LIGHT MODE — HIGH VISIBILITY & iOS-INSPIRED CLARITY
+   Crisp typography, deep text contrast, refined hairline borders, and
+   apple-grade aesthetic polish for daylight & low-glare reading.
+   ========================================================================== */
+
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+[data-theme="light"] body {
+  background: var(--canvas-bg);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Header & Nav */
+[data-theme="light"] .app-header {
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .brand-title {
+  color: #090d16 !important;
+  font-weight: 800;
+}
+
+[data-theme="light"] .brand-sub {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .nav-link {
+  color: #1e293b !important;
+  font-weight: 600;
+}
+
+[data-theme="light"] .nav-link:hover {
+  color: #090d16 !important;
+  background: #f1f5f9 !important;
+}
+
+[data-theme="light"] .nav-link.active {
+  color: #059669 !important;
+  background: rgba(5, 150, 105, 0.1) !important;
+  font-weight: 700;
+}
+
+[data-theme="light"] .icon-tool-btn {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #1e293b;
+}
+
+[data-theme="light"] .icon-tool-btn:hover {
+  background: #e2e8f0;
+  color: #090d16;
+}
+
+[data-theme="light"] .user-chip {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #090d16;
+}
+
+[data-theme="light"] .chip-name {
+  color: #090d16 !important;
+  font-weight: 700;
+}
+
+/* Mobile Nav Drawer */
+[data-theme="light"] .mobile-nav-drawer {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12) !important;
+}
+
+[data-theme="light"] .mobile-nav-item {
+  color: #1e293b !important;
+  font-weight: 600;
+}
+
+[data-theme="light"] .mobile-nav-item:hover {
+  background: #f1f5f9 !important;
+  color: #090d16 !important;
+}
+
+/* Headings & Text across Platform */
+[data-theme="light"] h1, 
+[data-theme="light"] h2, 
+[data-theme="light"] h3, 
+[data-theme="light"] h4, 
+[data-theme="light"] h5, 
+[data-theme="light"] h6 {
+  color: #090d16 !important;
+  letter-spacing: -0.022em;
+}
+
+[data-theme="light"] p {
+  color: #1e293b !important;
+}
+
+/* High Visibility Exam Simulator & Question Elements */
+[data-theme="light"] .question-text {
+  color: #090d16 !important;
+  font-weight: 700 !important;
+  line-height: 1.65;
+}
+
+[data-theme="light"] .question-passage {
+  background: #ffffff !important;
+  color: #1e293b !important;
+  border: 1px solid #cbd5e1 !important;
+  border-left: 4px solid #2563eb !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+
+[data-theme="light"] .option-row {
+  background: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+
+[data-theme="light"] .option-row:hover {
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+}
+
+[data-theme="light"] .option-row.selected {
+  background: #ecfdf5 !important;
+  border-color: #059669 !important;
+  box-shadow: 0 0 0 1.5px #059669;
+}
+
+[data-theme="light"] .option-key {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="light"] .option-row.selected .option-key {
+  background: #059669 !important;
+  color: #ffffff !important;
+  border-color: #059669 !important;
+}
+
+[data-theme="light"] .option-text {
+  color: #0f172a !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .option-row.selected .option-text {
+  color: #022c22 !important;
+  font-weight: 700 !important;
+}
+
+/* Explanations & Solutions in Light Mode */
+[data-theme="light"] .explanation-box {
+  background: #f0fdf4 !important;
+  border: 1px solid #86efac !important;
+  color: #14532d !important;
+}
+
+[data-theme="light"] .explanation-box p,
+[data-theme="light"] .explanation-box strong {
+  color: #14532d !important;
+}
+
+/* Dashboard & Cards in Light Mode */
+[data-theme="light"] .dashboard-wrapper {
+  color: #090d16;
+}
+
+[data-theme="light"] .profile-hero {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .student-name {
+  color: #090d16 !important;
+}
+
+[data-theme="light"] .aspirant-target {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .aspirant-target strong {
+  color: #090d16 !important;
+}
+
+[data-theme="light"] .streak-pill {
+  background: #fffbeb !important;
+  border: 1px solid #fde68a !important;
+  color: #b45309 !important;
+}
+
+[data-theme="light"] .streak-count {
+  color: #b45309 !important;
+}
+
+[data-theme="light"] .streak-label {
+  color: #d97706 !important;
+}
+
+/* React Modern UI in Light Mode */
+[data-theme="light"] .cbt-react-root {
+  background: #f2f5f9;
+}
+
+[data-theme="light"] .auth-form-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  padding: 2.2rem !important;
+  border-radius: 16px !important;
+}
+
+[data-theme="light"] .auth-form-title {
+  color: #090d16 !important;
+}
+
+[data-theme="light"] .auth-form-sub {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .auth-field-group label {
+  color: #1e293b !important;
+  font-weight: 700;
+}
+
+[data-theme="light"] .auth-input {
+  background: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #090d16 !important;
+}
+
+[data-theme="light"] .auth-input:focus {
+  border-color: #059669 !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15) !important;
+}
+
+[data-theme="light"] .auth-switch-text {
+  color: #475569 !important;
+}
+
+/* Tables & Leaderboard in Light Mode */
+[data-theme="light"] table {
+  color: #090d16;
+}
+
+[data-theme="light"] table thead tr {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+[data-theme="light"] table tbody tr {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] table tbody tr:hover {
+  background: #f8fafc !important;
+}
+
+[data-theme="light"] table td {
+  color: #1e293b !important;
+}
+
+/* ── Auth Page — Full Light Mode ────────────────────────────────────── */
+
+/* Right-side form panel */
+[data-theme="light"] .auth-form-panel {
+  background: #f2f5f9 !important;
+}
+
+/* Auth page hero panel stays dark-green (it's a brand panel) */
+[data-theme="light"] .auth-hero-panel {
+  background: linear-gradient(145deg, #064e3b 0%, #065f46 40%, #047857 70%, #053d2a 100%) !important;
+}
+
+/* Auth card — white card with clean border */
+[data-theme="light"] .auth-form-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.04) !important;
+  padding: 2.25rem !important;
+  border-radius: 18px !important;
+}
+
+[data-theme="light"] .auth-form-title {
+  color: #090d16 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+}
+
+[data-theme="light"] .auth-form-sub {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .auth-field-group label {
+  color: #1e293b !important;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+}
+
+[data-theme="light"] .auth-input {
+  background: #f8fafc !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #090d16 !important;
+}
+
+[data-theme="light"] .auth-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+[data-theme="light"] .auth-input:focus {
+  border-color: #059669 !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12) !important;
+}
+
+[data-theme="light"] .auth-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+}
+
+[data-theme="light"] .auth-error-box {
+  background: rgba(239,68,68,0.06) !important;
+  border-color: rgba(239,68,68,0.3) !important;
+  color: #dc2626 !important;
+}
+
+[data-theme="light"] .auth-switch-text {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .toggle-pw-btn {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .toggle-pw-btn:hover {
+  color: #334155 !important;
+}
+
+/* OTP Screen in Light Mode */
+[data-theme="light"] .otp-box {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #090d16 !important;
+}
+
+[data-theme="light"] .otp-box:focus {
+  border-color: #059669 !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 4px rgba(5,150,105,0.12) !important;
+}
+
+[data-theme="light"] .otp-help-tip {
+  background: rgba(5,150,105,0.07) !important;
+  border-color: rgba(5,150,105,0.25) !important;
+  color: #334155 !important;
+}
+
+[data-theme="light"] .otp-help-tip strong {
+  color: #065f46 !important;
+}
+
+[data-theme="light"] .otp-resend-prompt {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .otp-dash {
+  color: #94a3b8 !important;
+}
+
+[data-theme="light"] .otp-success-msg {
+  background: rgba(5,150,105,0.08) !important;
+  border-color: rgba(5,150,105,0.3) !important;
+  color: #065f46 !important;
+}
+
+/* Forgot Password Modal in Light Mode */
+[data-theme="light"] .fpw-overlay {
+  background: rgba(15, 23, 42, 0.5) !important;
+}
+
+[data-theme="light"] .fpw-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.06) !important;
+}
+
+[data-theme="light"] .fpw-title {
+  color: #090d16 !important;
+}
+
+[data-theme="light"] .fpw-desc {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .fpw-close {
+  color: #64748b !important;
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .fpw-close:hover {
+  background: rgba(239,68,68,0.08) !important;
+  border-color: rgba(239,68,68,0.25) !important;
+  color: #dc2626 !important;
+}
+
+[data-theme="light"] .fpw-success {
+  background: rgba(5,150,105,0.08) !important;
+  border-color: rgba(5,150,105,0.3) !important;
+  color: #065f46 !important;
+}
+
+/* Login warm-up hint in light mode */
+[data-theme="light"] #login-warmup-hint {
+  background: rgba(5,150,105,0.06) !important;
+  border-color: rgba(5,150,105,0.2) !important;
+  color: #334155 !important;
+}
+
+/* Success box in light mode */
+[data-theme="light"] #login-success-box {
+  background: rgba(5,150,105,0.08) !important;
+  border-color: rgba(5,150,105,0.3) !important;
+  color: #065f46 !important;
+}
+
+/* ── iOS-Style Typography Refinement ──────────────────────────────── */
+
+[data-theme="light"] body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.011em;
+}
+
+[data-theme="light"] h1,
+[data-theme="light"] h2,
+[data-theme="light"] h3 {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif !important;
+  font-weight: 700;
+  letter-spacing: -0.025em !important;
+}
+
+[data-theme="light"] .auth-form-card,
+[data-theme="light"] .auth-form-card * {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif !important;
+}
+

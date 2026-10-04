@@ -234,15 +234,28 @@ app.post('/api/auth/register', async (req, res) => {
       await user.save();
     }
 
-    console.log(`📨 [OTP-REGISTER] Verification code generated for ${user.email}: ${otp}`);
+    console.log(`📨 [OTP-REGISTER] Verification code for ${user.email}: ${otp}`);
 
-    // Send 6-digit verification email via Brevo
-    sendOtpEmail({
+    // Await OTP email — surface send failures to the client (don't silently swallow)
+    const emailResult = await sendOtpEmail({
       to: user.email,
       name: user.name,
       otp,
       isResend: false
-    }).catch(err => console.error('Failed to send registration OTP email:', err.message));
+    }).catch(err => ({ success: false, error: err.message }));
+
+    if (!emailResult.success) {
+      console.error(`[OTP-REGISTER] ❌ Email send failed for ${user.email}:`, emailResult.error);
+      // Return 201 anyway so the user can request a resend, but include a warning
+      return res.status(201).json({
+        success: true,
+        requiresOtp: true,
+        email: user.email,
+        name: user.name,
+        emailWarning: 'We could not deliver your verification email right now. Please use "Resend code" on the next screen.',
+        message: 'Account created. Please use the Resend button to get your verification code.'
+      });
+    }
 
     return res.status(201).json({
       success: true,
