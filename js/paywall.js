@@ -202,7 +202,18 @@ export const Paywall = {
       return;
     }
 
+    // Safety timeout — if widget doesn't open within 12s, show fallback
+    let widgetOpened = false;
+    const safetyTimer = setTimeout(() => {
+      if (!widgetOpened) {
+        console.warn('[Paywall] Credo widget timed out — showing fallback');
+        if (loadingEl) loadingEl.classList.add('hidden');
+        this._showPaymentFallback({ closeModal });
+      }
+    }, 12000);
+
     try {
+      console.log('[Paywall] Opening Credo widget with key:', publicKey.substring(0, 8) + '...');
       const handler = window.CredoWidget.setup({
         key: publicKey,
         email: email,
@@ -216,8 +227,11 @@ export const Paywall = {
           product: 'Premium Access (Lifetime)'
         },
         callBack: (response) => {
+          widgetOpened = true;
+          clearTimeout(safetyTimer);
           if (loadingEl) loadingEl.classList.add('hidden');
-          if (response && (response.status === 'success' || response.status === 'PAID' || response.status === 200)) {
+          console.log('[Paywall] Credo callBack response:', response);
+          if (response && (response.status === 'success' || response.status === 'PAID' || response.status === 200 || response.status === 0)) {
             Storage.setPremium({ reference: response.reference || response.transactionRef, email });
             closeModal();
             this._showSuccessToast();
@@ -227,13 +241,18 @@ export const Paywall = {
           }
         },
         onClose: () => {
+          widgetOpened = true;
+          clearTimeout(safetyTimer);
           if (loadingEl) loadingEl.classList.add('hidden');
         }
       });
 
       if (loadingEl) loadingEl.classList.add('hidden');
       handler.openIframe();
+      widgetOpened = true;
+      clearTimeout(safetyTimer);
     } catch (err) {
+      clearTimeout(safetyTimer);
       if (loadingEl) loadingEl.classList.add('hidden');
       console.error('[Paywall] Credo widget error:', err);
       this._showPaymentFallback({ closeModal });
