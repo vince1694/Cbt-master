@@ -6,6 +6,7 @@
 import { Storage } from './storage.js';
 import { Auth } from './auth.js';
 import { AuthView } from './auth-view.js';
+import { mountReactApp } from './react-app.bundle.js';
 import { Api } from './api.js';
 import { 
   DEPARTMENTS, 
@@ -62,9 +63,11 @@ class JambWaecApp {
     const header = document.getElementById("app-header");
     if (header) header.style.display = "none";
 
-    AuthView.render("main-app-container", (user) => {
-      if (header) header.style.display = "";
-      this._bootMainApp();
+    mountReactApp("main-app-container", {
+      onAuthSuccess: (user) => {
+        if (header) header.style.display = "";
+        this._bootMainApp();
+      }
     });
   }
 
@@ -257,13 +260,14 @@ class JambWaecApp {
   navigateToDashboard() {
     this.currentView = "dashboard";
     this.renderHeader();
-    Dashboard.render("main-app-container", {
+    mountReactApp("main-app-container", {
       onStartJamb: (dept, mode, customSubjects, count) => this.startJambExam(dept, mode, customSubjects, count),
       onStartWaec: (subject, mode) => this.startWaecExam(subject, mode),
       onReviewTest: (testData) => this.navigateToResult(testData),
       onOpenStudyMode: () => this.navigateToQuestionBrowser(),
       onOpenNovelStudy: () => this.navigateToNovelHub(),
-      onOpenProfile: () => this.navigateToProfile()
+      onOpenProfile: () => this.navigateToProfile(),
+      onLogout: () => this._handleLogout()
     });
   }
 
