@@ -58,9 +58,6 @@ export const CbtView = {
             </button>
           </div>
         </header>
-            </button>
-          </div>
-        </header>
 
         <!-- Subject Navigation Tabs (e.g., English, Maths, Physics, Chemistry) -->
         <nav class="cbt-subject-tabs" id="cbt-subject-nav">

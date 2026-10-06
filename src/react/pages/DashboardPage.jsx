@@ -533,20 +533,6 @@ export const DashboardPage = ({
           </table>
         </div>
       )}
-                        cursor: 'pointer',
-                        fontSize: '0.82rem',
-                        fontWeight: 600
-                      }}
-                    >
-                      Review
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
 
       {/* Subject Picker Modal */}
       {activeSubjectModal && (
