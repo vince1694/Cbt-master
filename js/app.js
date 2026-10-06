@@ -28,6 +28,7 @@ import { AnalyticsView } from './analytics-view.js';
 import { StudyPlanner } from './study-planner.js';
 import { ProfileView } from './profile-view.js';
 import { Paywall } from './paywall.js';
+import { PaymentView } from './payment-view.js';
 
 class JambWaecApp {
   constructor() {
@@ -44,6 +45,21 @@ class JambWaecApp {
     Api.checkServerHealth().then(online => {
       if (online) console.log('[CBT Master] Backend API connected ✅');
     });
+
+    // Check for incoming Credo payment return callback in URL query parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const transRef = urlParams.get('transRef') || urlParams.get('reference');
+    if (transRef && !Storage.isPremiumActive()) {
+      const email = (localStorage.getItem('cbt_user_email') || Storage.getUserProfile().email || '').trim();
+      Storage.setPremium({ reference: transRef, email });
+      fetch(`${Api._base()}/payment/verify-credo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transRef, email })
+      }).catch(() => {});
+      window.history.replaceState({}, document.title, window.location.pathname);
+      PaymentView._showToast('Payment verified! Lifetime Premium Access Unlocked 🎉');
+    }
 
     // Handle JWT expiry — redirect to login cleanly
     window.addEventListener('cbt:session-expired', () => {
@@ -129,6 +145,11 @@ class JambWaecApp {
           <button class="nav-link ${this.currentView === 'bookmarks' ? 'active' : ''}" id="nav-bookmarks-btn">
             🔖 Saved
           </button>
+          ${!Storage.isPremiumActive() ? `
+            <button class="nav-link ${this.currentView === 'payment' ? 'active' : ''} nav-upgrade-highlight" id="nav-upgrade-btn">
+              👑 Upgrade (&#8358;2,000)
+            </button>
+          ` : ''}
         </nav>
 
         <div class="header-controls">
@@ -172,6 +193,9 @@ class JambWaecApp {
         <button class="mobile-nav-item" id="mnav-novel">📖 The Life Changer Hub</button>
         <button class="mobile-nav-item" id="mnav-bookmarks">🔖 Saved Questions</button>
         <button class="mobile-nav-item" id="mnav-profile">👤 Aspirant Profile &amp; Settings</button>
+        ${!Storage.isPremiumActive() ? `
+          <button class="mobile-nav-item mnav-upgrade-highlight" id="mnav-payment">👑 Upgrade to Premium (&#8358;2,000)</button>
+        ` : ''}
         <div class="mobile-nav-separator"></div>
         <button class="mobile-nav-item mobile-nav-danger" id="mnav-logout">🚪 Sign Out</button>
       </div>
@@ -218,8 +242,10 @@ class JambWaecApp {
     document.getElementById("mnav-novel")?.addEventListener("click", () => { closeMobileNav(); this.navigateToNovelHub(); });
     document.getElementById("mnav-bookmarks")?.addEventListener("click", () => { closeMobileNav(); this.navigateToBookmarks(); });
     document.getElementById("mnav-profile")?.addEventListener("click", () => { closeMobileNav(); this.navigateToProfile(); });
+    document.getElementById("mnav-payment")?.addEventListener("click", () => { closeMobileNav(); this.navigateToPayment(); });
     document.getElementById("mnav-logout")?.addEventListener("click", () => { closeMobileNav(); this._handleLogout(); });
     document.getElementById("header-logout-btn")?.addEventListener("click", () => this._handleLogout());
+    document.getElementById("nav-upgrade-btn")?.addEventListener("click", () => this.navigateToPayment());
 
     if (userChip) {
       userChip.addEventListener("click", () => {
@@ -279,6 +305,23 @@ class JambWaecApp {
       ProfileView.render(container, {
         onBack: () => this.navigateToDashboard(),
         onLogout: () => this._handleLogout()
+      });
+    }
+  }
+
+  navigateToPayment(featureName = 'Premium Features', onGranted = null) {
+    this.currentView = "payment";
+    this.renderHeader();
+    const container = document.getElementById("main-app-container");
+    if (container) {
+      PaymentView.render(container, {
+        featureName,
+        onBack: () => this.navigateToDashboard(),
+        onGranted: () => {
+          this.renderHeader();
+          if (onGranted) onGranted();
+          else this.navigateToDashboard();
+        }
       });
     }
   }

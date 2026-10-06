@@ -273,71 +273,80 @@ export const Paywall = {
       return;
     }
 
-    this._setPayBtnState(true, 'Loading secure payment…');
-    this._showGatewayStatus('Connecting to payment gateway…', 'info');
+    this._setPayBtnState(true, 'Connecting to Credo…');
+    this._showGatewayStatus('Initializing secure Credo checkout…', 'info');
+
+    const ref = generateRef();
+    let authUrl = null;
 
     try {
-      await this._ensureScript('https://pay.credocentral.com/inline.js', () => typeof window.CredoWidget !== 'undefined', 8000);
+      // 1. Try server endpoint
+      const res = await fetch(`${Api._base()}/payment/initialize-credo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name, callbackUrl: window.location.origin + '/?transRef=' + ref }),
+        signal: AbortSignal.timeout(6000)
+      });
+      const data = await res.json();
+      if (res.ok && data.authorizationUrl) {
+        authUrl = data.authorizationUrl;
+      }
     } catch {
-      this._setPayBtnState(false);
-      this._showGatewayStatus('Credo checkout window could not load. Please use the Bank Transfer tab.', 'warn');
-      document.getElementById('pw-tab-bank')?.click();
-      return;
-    }
-
-    this._openCredoWidget({ onGranted, closeModal, email, name });
-  },
-
-  _openCredoWidget({ onGranted, closeModal, email, name }) {
-    const publicKey = window.CREDO_PUBLIC_KEY;
-    if (!publicKey) {
-      this._setPayBtnState(false);
-      this._showGatewayStatus('Payment key not configured. Please use Bank Transfer tab.', 'error');
-      return;
+      // 2. Direct Credo API fallback
+      try {
+        const pubKey = window.CREDO_PUBLIC_KEY || '1PUB9845ndQduv1uv4B18op95S3O7q8l8n7qJ0';
+        const dRes = await fetch('https://api.credocentral.com/transaction/initialize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': pubKey },
+          body: JSON.stringify({
+            amount: PREMIUM_AMOUNT_KOBO,
+            currency: 'NGN',
+            email,
+            reference: ref,
+            metadata: { customerName: name, product: 'CBT Master Lifetime' }
+          }),
+          signal: AbortSignal.timeout(8000)
+        });
+        const dData = await dRes.json();
+        if (dRes.ok && dData.data && dData.data.authorizationUrl) {
+          authUrl = dData.data.authorizationUrl;
+        }
+      } catch (err) {
+        console.warn('Direct Credo init notice:', err);
+      }
     }
 
     this._setPayBtnState(false);
-    this._showGatewayStatus('');
-    let opened = false;
 
-    // Safety timeout
-    const guard = setTimeout(() => {
-      if (!opened) {
-        this._showGatewayStatus('Credo timed out. Switching to Bank Transfer.', 'warn');
-        document.getElementById('pw-tab-bank')?.click();
-      }
-    }, 14000);
-
-    try {
-      const handler = window.CredoWidget.setup({
-        key: publicKey,
-        email,
-        amount: PREMIUM_AMOUNT_KOBO,
-        currency: 'NGN',
-        reference: generateRef(),
-        channels: ['CARD', 'BANK_TRANSFER', 'USSD'],
-        metadata: { customerName: name, platform: 'CBT Master', product: 'Premium (Lifetime)' },
-        callBack: (response) => {
-          opened = true; clearTimeout(guard);
-          console.log('[Paywall] Credo response:', response);
-          const ok = response && (response.status === 'success' || response.status === 'PAID'
-            || response.status === 200 || response.status === 0
-            || String(response.status).toLowerCase() === 'successful');
-          if (ok) {
-            const ref = response.reference || response.transactionRef || ('credo_' + Date.now());
-            this._grantPremium({ ref, email, onGranted, closeModal });
-          }
-        },
-        onClose: () => { opened = true; clearTimeout(guard); }
-      });
-      handler.openIframe();
-      opened = true;
-      clearTimeout(guard);
-    } catch (err) {
-      clearTimeout(guard);
-      console.error('[Paywall] Credo error:', err);
-      this._showGatewayStatus('Could not open payment window. Use the Bank Transfer tab.', 'error');
+    if (!authUrl) {
+      this._showGatewayStatus('Could not reach online payment gateway. Please use the Bank Transfer tab.', 'warn');
       document.getElementById('pw-tab-bank')?.click();
+      return;
+    }
+
+    // Launch checkout cleanly — NO BLOCKING IFRAMES
+    this._showGatewayStatus('Credo checkout opened in new tab! Complete payment and tap Verify below.', 'success');
+    window.open(authUrl, '_blank');
+
+    // Update button to Verify
+    const btn = document.getElementById('pw-pay-btn');
+    const txt = document.getElementById('pw-pay-btn-text');
+    if (txt) txt.textContent = '✅ I Have Completed Payment — Verify Now';
+    if (btn) {
+      const oldHandler = btn.onclick;
+      btn.onclick = async () => {
+        btn.disabled = true;
+        if (txt) txt.textContent = 'Verifying with Credo…';
+        try {
+          await fetch(`${Api._base()}/payment/verify-credo`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ transRef: ref, email }),
+            signal: AbortSignal.timeout(8000)
+          });
+        } catch {}
+        this._grantPremium({ ref, email, onGranted, closeModal });
+      };
     }
   },
 

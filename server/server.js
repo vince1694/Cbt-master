@@ -757,6 +757,80 @@ app.all('/api/admin/reset-users', async (req, res) => {
   }
 });
 
+// Credo Payment Initialization Endpoint (Returns official Credo authorizationUrl)
+app.post('/api/payment/initialize-credo', async (req, res) => {
+  try {
+    const { email, name, callbackUrl } = req.body;
+    if (!email) return res.status(400).json({ error: 'Candidate email is required.' });
+
+    const publicKey = (process.env.CREDO_PUBLIC_KEY || '1PUB9845ndQduv1uv4B18op95S3O7q8l8n7qJ0').trim();
+    const reference = 'CBTM_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7).toUpperCase();
+
+    const credoRes = await fetch('https://api.credocentral.com/transaction/initialize', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': publicKey
+      },
+      body: JSON.stringify({
+        amount: 200000, // 200,000 Kobo = NGN 2,000
+        currency: 'NGN',
+        email: email.trim().toLowerCase(),
+        reference,
+        callbackUrl: callbackUrl || (process.env.APP_URL || 'https://cbtmaster.guru') + '/?transRef=' + reference,
+        metadata: {
+          customerName: name || 'Candidate',
+          platform: 'CBT Master',
+          product: 'Premium Lifetime Access'
+        }
+      }),
+      signal: AbortSignal.timeout(8000)
+    });
+
+    const data = await credoRes.json().catch(() => ({}));
+
+    if (credoRes.ok && data && data.data && data.data.authorizationUrl) {
+      return res.json({
+        success: true,
+        authorizationUrl: data.data.authorizationUrl,
+        reference: data.data.reference || reference,
+        credoReference: data.data.credoReference
+      });
+    }
+
+    console.warn('Credo initialize returned non-200:', data);
+    res.status(400).json({
+      error: data.message || 'Could not initialize Credo transaction.',
+      details: data
+    });
+  } catch (err) {
+    console.error('Credo init error:', err);
+    res.status(500).json({ error: 'Failed to connect to Credo gateway: ' + err.message });
+  }
+});
+
+// Check user premium status by email
+app.post('/api/payment/check-premium', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required.' });
+
+    const user = await User.findOne({ email: email.trim().toLowerCase() }).lean();
+    if (user && user.isPremium) {
+      return res.json({
+        isPremium: true,
+        premiumReference: user.premiumReference || 'active',
+        name: user.name
+      });
+    }
+
+    res.json({ isPremium: false });
+  } catch (err) {
+    console.error('Check premium error:', err);
+    res.status(500).json({ error: 'Database check failed.' });
+  }
+});
+
 // Credo Payment Verification Endpoint
 app.post('/api/payment/verify-credo', async (req, res) => {
   try {
