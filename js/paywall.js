@@ -1,7 +1,6 @@
 /**
- * Paywall — Premium Access Gate (Rebuilt v3)
- * Dual-gateway: Credo inline widget (primary) + Paystack (secondary fallback)
- * Instant bank-transfer tab shown if both JS gateways fail.
+ * Paywall — Premium Access Gate
+ * Powered strictly by Credo inline payment gateway + Moniepoint Direct Bank Transfer.
  * Full mobile-first bottom-sheet design — never hangs.
  */
 import { Storage } from './storage.js';
@@ -281,10 +280,8 @@ export const Paywall = {
       await this._ensureScript('https://pay.credocentral.com/inline.js', () => typeof window.CredoWidget !== 'undefined', 8000);
     } catch {
       this._setPayBtnState(false);
-      this._showGatewayStatus('Payment gateway took too long. Trying fallback…', 'warn');
-      await new Promise(r => setTimeout(r, 600));
-      // Try Paystack as secondary
-      this._tryPaystack({ onGranted, closeModal, email, name });
+      this._showGatewayStatus('Credo checkout window could not load. Please use the Bank Transfer tab.', 'warn');
+      document.getElementById('pw-tab-bank')?.click();
       return;
     }
 
@@ -306,7 +303,7 @@ export const Paywall = {
     // Safety timeout
     const guard = setTimeout(() => {
       if (!opened) {
-        this._showGatewayStatus('Gateway timed out. Switching to bank transfer.', 'warn');
+        this._showGatewayStatus('Credo timed out. Switching to Bank Transfer.', 'warn');
         document.getElementById('pw-tab-bank')?.click();
       }
     }, 14000);
@@ -340,46 +337,6 @@ export const Paywall = {
       clearTimeout(guard);
       console.error('[Paywall] Credo error:', err);
       this._showGatewayStatus('Could not open payment window. Use the Bank Transfer tab.', 'error');
-      document.getElementById('pw-tab-bank')?.click();
-    }
-  },
-
-  // ── Paystack fallback ─────────────────────────────────────────────────────
-  async _tryPaystack({ onGranted, closeModal, email, name }) {
-    const PS_KEY = window.PAYSTACK_PUBLIC_KEY || '';
-    if (!PS_KEY) {
-      // Skip paystack, go straight to bank transfer
-      this._showGatewayStatus('Online payment unavailable. Please use the Bank Transfer tab.', 'warn');
-      document.getElementById('pw-tab-bank')?.click();
-      return;
-    }
-
-    this._setPayBtnState(true, 'Opening Paystack…');
-    try {
-      await this._ensureScript('https://js.paystack.co/v1/inline.js', () => typeof window.PaystackPop !== 'undefined', 8000);
-    } catch {
-      this._setPayBtnState(false);
-      this._showGatewayStatus('Both payment gateways offline. Use Bank Transfer.', 'error');
-      document.getElementById('pw-tab-bank')?.click();
-      return;
-    }
-
-    this._setPayBtnState(false);
-    try {
-      const handler = window.PaystackPop.setup({
-        key: PS_KEY,
-        email,
-        amount: PREMIUM_AMOUNT_KOBO,
-        currency: 'NGN',
-        ref: generateRef(),
-        metadata: { name },
-        callback: (response) => {
-          this._grantPremium({ ref: response.reference, email, onGranted, closeModal });
-        },
-        onClose: () => {}
-      });
-      handler.openIframe();
-    } catch {
       document.getElementById('pw-tab-bank')?.click();
     }
   },
