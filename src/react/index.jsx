@@ -8,9 +8,19 @@ export function mountReactApp(container, bridgeCallbacks = {}) {
   const target = typeof container === 'string' ? document.getElementById(container) : container;
   if (!target) return null;
 
-  if (!rootInstance) {
-    rootInstance = ReactDOM.createRoot(target);
+  // If a root already existed on this target, safely unmount or reset
+  try {
+    if (rootInstance) {
+      rootInstance.unmount();
+      rootInstance = null;
+    }
+  } catch (err) {
+    // If the DOM container was cleared by CBT or Result view (vanilla JS), ignore the unmount warning
+    rootInstance = null;
   }
+
+  target.innerHTML = '';
+  rootInstance = ReactDOM.createRoot(target);
 
   rootInstance.render(
     <App bridgeCallbacks={bridgeCallbacks} />
@@ -21,7 +31,11 @@ export function mountReactApp(container, bridgeCallbacks = {}) {
 
 export function unmountReactApp() {
   if (rootInstance) {
-    rootInstance.unmount();
+    try {
+      rootInstance.unmount();
+    } catch (e) {
+      // ignore
+    }
     rootInstance = null;
   }
 }

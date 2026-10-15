@@ -305,9 +305,14 @@ class JambWaecApp {
   navigateToDashboard() {
     this.currentView = "dashboard";
     this.renderHeader();
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    const container = document.getElementById("main-app-container");
+    if (container) {
+      container.innerHTML = '';
+    }
     mountReactApp("main-app-container", {
-      onStartJamb: (dept, mode, customSubjects, count) => this.startJambExam(dept, mode, customSubjects, count),
-      onStartWaec: (subject, mode) => this.startWaecExam(subject, mode),
+      onStartJamb: (dept, mode, customSubjects, count, year) => this.startJambExam(dept, mode, customSubjects, count, year),
+      onStartWaec: (subject, mode, year, paper) => this.startWaecExam(subject, mode, year, paper),
       onReviewTest: (testData) => this.navigateToResult(testData),
       onOpenStudyMode: () => this.navigateToQuestionBrowser(),
       onOpenNovelStudy: () => this.navigateToNovelHub(),

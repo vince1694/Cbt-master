@@ -407,10 +407,11 @@ export const CbtView = {
     const modal = document.createElement("div");
     modal.id = "cbt-exit-modal-dialog";
     modal.className = "modal-backdrop";
+    modal.style.cssText = "position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; padding: 1rem;";
     modal.innerHTML = `
-      <div class="modal-card modal-exit" style="max-width: 440px; background: var(--surface-card, #1e293b); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 14px; padding: 1.5rem; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+      <div class="modal-card modal-exit" style="max-width: 440px; width: 100%; background: var(--surface-card, #1e293b); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 14px; padding: 1.5rem; box-shadow: 0 20px 40px rgba(0,0,0,0.5); pointer-events: auto;">
         <div class="modal-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 0.85rem;">
-          <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(239, 68, 68, 0.15); display: flex; align-items: center; justify-content: center; color: #ef4444;">
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(239, 68, 68, 0.15); display: flex; align-items: center; justify-content: center; color: #ef4444; flex-shrink: 0;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </div>
           <h3 style="margin: 0; font-size: 1.15rem; color: #fff;">Exit Examination?</h3>
@@ -421,12 +422,12 @@ export const CbtView = {
             Any unsubmitted responses in this practice session will not be saved or graded.
           </p>
         </div>
-        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px;">
-          <button class="btn-ghost" id="cbt-modal-cancel-exit" style="padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: #fff; cursor: pointer;">
-            Resume Test
-          </button>
-          <button class="btn-primary" id="cbt-modal-confirm-exit" style="padding: 8px 18px; border-radius: 8px; background: #ef4444; border: 1px solid #dc2626; color: #fff; font-weight: 600; cursor: pointer;">
+        <div class="modal-footer" style="display: flex; flex-direction: column; gap: 10px;">
+          <button class="btn-primary" id="cbt-modal-confirm-exit" style="width: 100%; padding: 12px 18px; border-radius: 8px; background: #ef4444; border: 1px solid #dc2626; color: #fff; font-weight: 700; font-size: 1rem; cursor: pointer; touch-action: manipulation;">
             Yes, Exit Now
+          </button>
+          <button class="btn-ghost" id="cbt-modal-cancel-exit" style="width: 100%; padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: #fff; cursor: pointer; touch-action: manipulation;">
+            Resume Test
           </button>
         </div>
       </div>
@@ -434,8 +435,13 @@ export const CbtView = {
 
     document.body.appendChild(modal);
 
-    modal.querySelector("#cbt-modal-cancel-exit").addEventListener("click", () => modal.remove());
-    modal.querySelector("#cbt-modal-confirm-exit").addEventListener("click", () => {
+    const closeModal = (e) => {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      modal.remove();
+    };
+
+    const confirmExit = (e) => {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
       modal.remove();
       try {
         if (engine && typeof engine.destroy === 'function') {
@@ -444,10 +450,23 @@ export const CbtView = {
       } catch (err) {
         console.warn('[CBT Exit] Cleaned engine state:', err);
       }
-      if (onExitExam) {
+      if (typeof onExitExam === 'function') {
         onExitExam();
+      } else if (window.App && typeof window.App.navigateToDashboard === 'function') {
+        window.App.navigateToDashboard();
+      } else {
+        window.location.reload();
       }
-    });
+    };
+
+    const cancelBtn = modal.querySelector("#cbt-modal-cancel-exit");
+    const confirmBtn = modal.querySelector("#cbt-modal-confirm-exit");
+
+    cancelBtn?.addEventListener("click", closeModal);
+    cancelBtn?.addEventListener("touchend", closeModal);
+
+    confirmBtn?.addEventListener("click", confirmExit);
+    confirmBtn?.addEventListener("touchend", confirmExit);
   },
 
   openSubmitModal(engine) {

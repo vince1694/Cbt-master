@@ -230,14 +230,38 @@ export const ResultView = {
   attachReviewEvents(resultData, { onReturnDashboard, onRetakeExam }) {
     // Back to dashboard
     const backBtn = document.getElementById("btn-back-dashboard");
-    if (backBtn && onReturnDashboard) {
-      backBtn.addEventListener("click", onReturnDashboard);
+    if (backBtn) {
+      const handleReturn = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        if (typeof onReturnDashboard === 'function') {
+          onReturnDashboard();
+        } else if (window.App && typeof window.App.navigateToDashboard === 'function') {
+          window.App.navigateToDashboard();
+        } else {
+          window.location.reload();
+        }
+      };
+      backBtn.addEventListener("click", handleReturn);
+      backBtn.addEventListener("touchend", handleReturn);
     }
 
     // Retake exam
     const retakeBtn = document.getElementById("btn-retake-exam");
-    if (retakeBtn && onRetakeExam) {
-      retakeBtn.addEventListener("click", () => onRetakeExam(resultData));
+    if (retakeBtn) {
+      const handleRetake = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        if (typeof onRetakeExam === 'function') {
+          onRetakeExam(resultData);
+        }
+      };
+      retakeBtn.addEventListener("click", handleRetake);
+      retakeBtn.addEventListener("touchend", handleRetake);
     }
 
     // Print Result Slip
