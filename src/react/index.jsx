@@ -20,11 +20,24 @@ export function mountReactApp(container, bridgeCallbacks = {}) {
   }
 
   target.innerHTML = '';
-  rootInstance = ReactDOM.createRoot(target);
-
-  rootInstance.render(
-    <App bridgeCallbacks={bridgeCallbacks} />
-  );
+  try {
+    rootInstance = ReactDOM.createRoot(target);
+    rootInstance.render(
+      <App bridgeCallbacks={bridgeCallbacks} />
+    );
+  } catch (renderErr) {
+    console.error('[mountReactApp] Error creating React root:', renderErr);
+    try {
+      rootInstance = null;
+      target.innerHTML = '';
+      rootInstance = ReactDOM.createRoot(target);
+      rootInstance.render(
+        <App bridgeCallbacks={bridgeCallbacks} />
+      );
+    } catch (retryErr) {
+      console.error('[mountReactApp] Retry failed:', retryErr);
+    }
+  }
 
   return rootInstance;
 }

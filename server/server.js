@@ -130,6 +130,7 @@ const User = mongoose.model('User', userSchema);
 // Test Result Model
 const testResultSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  candidateEmail: { type: String, index: true },
   candidateName: { type: String, required: true },
   examType: { type: String, required: true }, // JAMB, WAEC, DAILY_CHALLENGE
   examTitle: { type: String, required: true },
@@ -488,14 +489,30 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Save Test Result
+// Save Test Result (Isolated per Candidate)
 app.post('/api/results', async (req, res) => {
   try {
     const { examType, examTitle, department, score, totalQuestions, percentage,
             scaledJambScore, waecGrade, timeSpentMinutes, candidateName,
-            candidateEmail, weakSubjects } = req.body;
+            candidateEmail, weakSubjects, userId: bodyUserId } = req.body;
+
+    // Extract authenticated user ID from JWT if available
+    let authUserId = null;
+    try {
+      const authHeader = req.headers['authorization'];
+      const token = authHeader && authHeader.split(' ')[1];
+      if (token) {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        authUserId = decoded.id;
+      }
+    } catch (_) {}
+
+    const resolvedUserId = authUserId || (bodyUserId ? bodyUserId : null);
+    const resolvedEmail = candidateEmail ? candidateEmail.trim().toLowerCase() : null;
 
     const result = new TestResult({
+      userId: resolvedUserId,
+      candidateEmail: resolvedEmail,
       candidateName: candidateName || 'Candidate',
       examType: examType || 'JAMB',
       examTitle: examTitle || 'Practice Simulation',
@@ -511,9 +528,9 @@ app.post('/api/results', async (req, res) => {
     await result.save();
 
     // 🔔 Send result summary email if email provided (non-blocking)
-    if (candidateEmail) {
+    if (resolvedEmail) {
       sendResultEmail({
-        to: candidateEmail,
+        to: resolvedEmail,
         name: candidateName || 'Student',
         examTitle: examTitle || 'Practice Simulation',
         examType: examType || 'JAMB',
@@ -531,6 +548,26 @@ app.post('/api/results', async (req, res) => {
   } catch (err) {
     console.error('Save result error:', err);
     res.status(500).json({ error: 'Could not record test result.' });
+  }
+});
+
+// Candidate-Isolated Route: Fetch only this user's personal test results
+app.get('/api/results/my-results', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const filter = {
+      $or: [
+        { userId: req.user.id }
+      ]
+    };
+    if (user && user.email) {
+      filter.$or.push({ candidateEmail: user.email.toLowerCase() });
+    }
+    const results = await TestResult.find(filter).sort({ createdAt: -1 }).limit(50);
+    res.json({ results });
+  } catch (err) {
+    console.error('Fetch my-results error:', err);
+    res.status(500).json({ error: 'Could not retrieve test results.' });
   }
 });
 
@@ -867,36 +904,49 @@ app.post('/api/payment/check-premium', async (req, res) => {
 app.post('/api/payment/verify-credo', async (req, res) => {
   try {
     const { transRef, email } = req.body;
-    if (!transRef) return res.status(400).json({ error: 'Transaction reference is required.' });
+    if (!transRef) return res.status(400).json({ success: false, verified: false, error: 'Transaction reference is required.' });
 
     const secretKey = (process.env.CREDO_SECRET_KEY || '').trim();
-
-    let verified = false;
-    let verifiedData = null;
-
-    if (secretKey) {
-      try {
-        const credoRes = await fetch(`https://api.credocentral.com/transaction/${transRef}/verify`, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': secretKey
-          },
-          signal: AbortSignal.timeout(6000)
-        });
-
-        const credoData = await credoRes.json().catch(() => ({}));
-        if (credoRes.ok && credoData.data && (credoData.data.status === 200 || credoData.data.status === '0' || credoData.data.status === 'successful')) {
-          verified = true;
-          verifiedData = credoData.data;
-        }
-      } catch (e) {
-        // Proceed to fallback verification
-      }
+    if (!secretKey) {
+      return res.status(500).json({ success: false, verified: false, error: 'Payment gateway secret key is not configured.' });
     }
 
-    // Persist premium status to MongoDB if user email is known
-    const userEmail = email || (verifiedData && verifiedData.customer && verifiedData.customer.email);
+    // Call Credo verification API
+    const credoRes = await fetch(`https://api.credocentral.com/transaction/${transRef}/verify`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': secretKey
+      },
+      signal: AbortSignal.timeout(10000)
+    });
+
+    const credoData = await credoRes.json().catch(() => ({}));
+
+    // Check Credo response validity
+    // Successful Credo verification returns status 200 with data containing successful status and amount >= 2000
+    const isHttpStatusOk = credoRes.ok;
+    const isCredoStatusOk = credoData.status === 200 || credoData.status === 0;
+    const txData = credoData.data || {};
+    const txStatus = String(txData.status ?? '').toLowerCase();
+    const isTxSuccessful = txStatus === '200' || txStatus === '0' || txStatus === 'successful' || txStatus === 'success';
+
+    // Verify amount is at least 2000 Naira (or 200000 Kobo)
+    const rawAmount = Number(txData.amount || 0);
+    const isAmountValid = rawAmount >= 2000;
+
+    if (!isHttpStatusOk || !isCredoStatusOk || !isTxSuccessful || !isAmountValid) {
+      console.warn(`⚠️ [PAYMENT-REJECTED] Incomplete/Unverified transaction: ref=${transRef}, status=${txStatus}, amount=${rawAmount}`);
+      return res.status(400).json({
+        success: false,
+        verified: false,
+        error: 'Payment was not completed. Full payment of ₦2,000 is required to unlock premium access.',
+        details: { transRef, status: txStatus || 'unpaid' }
+      });
+    }
+
+    // Payment is legitimately confirmed by Credo! Persist to MongoDB
+    const userEmail = email || (txData.customer && txData.customer.email);
     if (userEmail) {
       try {
         const user = await User.findOne({ email: userEmail.toLowerCase().trim() });
@@ -904,22 +954,23 @@ app.post('/api/payment/verify-credo', async (req, res) => {
           user.isPremium = true;
           user.premiumReference = transRef;
           await user.save();
-          console.log(`👑 [PREMIUM] User upgraded to premium: ${user.email} (ref: ${transRef})`);
+          console.log(`👑 [PREMIUM-ACTIVATED] User upgraded to lifetime premium: ${user.email} (ref: ${transRef})`);
         }
       } catch (dbErr) {
         console.warn('Could not update user premium state in DB:', dbErr.message);
       }
     }
 
-    if (verified) {
-      return res.json({ success: true, verified: true, data: verifiedData });
-    } else {
-      return res.json({ success: true, verified: true, transRef, note: 'Payment recorded and confirmed.' });
-    }
+    return res.json({
+      success: true,
+      verified: true,
+      transRef,
+      amount: 2000,
+      message: 'Payment verified successfully! Lifetime Premium Unlocked.'
+    });
   } catch (err) {
     console.error('Credo verify error:', err);
-    // Return verified so users who paid aren't locked out due to network hiccups
-    res.json({ success: true, verified: true, transRef: req.body.transRef });
+    res.status(500).json({ success: false, verified: false, error: 'Payment verification failed due to gateway timeout. Please retry.' });
   }
 });
 

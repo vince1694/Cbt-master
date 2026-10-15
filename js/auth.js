@@ -87,13 +87,22 @@ export const Auth = {
       'cbt_auth_token',
       'cbt_user_email',
       'cbt_user_name',
-      'jamb_waec_user_profile'
+      'cbt_user_id',
+      'jamb_waec_user_profile',
+      'jamb_waec_test_history',
+      'jamb_waec_bookmarks',
+      'jamb_waec_daily_challenge',
+      'jamb_waec_achievements',
+      'jamb_waec_study_planner',
+      'cbtmaster_premium',
+      'cbt_master_premium_v1',
+      'cbt_premium_data'
     ];
     keysToRemove.forEach(k => localStorage.removeItem(k));
 
     // Also wipe any other cbt_* keys that might create ghost login state
     Object.keys(localStorage)
-      .filter(k => k.startsWith('cbt_') || k.startsWith('cbtmaster_'))
+      .filter(k => k.startsWith('cbt_') || k.startsWith('cbtmaster_') || k.startsWith('jamb_waec_'))
       .forEach(k => localStorage.removeItem(k));
 
     // Clear sessionStorage too — some browsers persist auth state there

@@ -62,11 +62,18 @@ export const authStorage = {
       'cbt_auth_token',
       'cbt_user_email',
       'cbt_user_name',
-      'jamb_waec_user_profile'
+      'jamb_waec_user_profile',
+      'jamb_waec_test_history',
+      'jamb_waec_bookmarks',
+      'jamb_waec_daily_challenge',
+      'jamb_waec_achievements',
+      'jamb_waec_study_planner',
+      'cbtmaster_premium',
+      'cbt_master_premium_v1'
     ];
     keys.forEach(k => localStorage.removeItem(k));
     Object.keys(localStorage)
-      .filter(k => k.startsWith('cbt_') || k.startsWith('cbtmaster_'))
+      .filter(k => k.startsWith('cbt_') || k.startsWith('cbtmaster_') || k.startsWith('jamb_waec_guest'))
       .forEach(k => localStorage.removeItem(k));
     try { sessionStorage.clear(); } catch {}
   }

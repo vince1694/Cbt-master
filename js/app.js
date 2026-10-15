@@ -49,16 +49,31 @@ class JambWaecApp {
     // Check for incoming Credo payment return callback in URL query parameters
     const urlParams = new URLSearchParams(window.location.search);
     const transRef = urlParams.get('transRef') || urlParams.get('reference');
-    if (transRef && !Storage.isPremiumActive()) {
+    if (transRef) {
+      window.history.replaceState({}, document.title, window.location.pathname);
       const email = (localStorage.getItem('cbt_user_email') || Storage.getUserProfile().email || '').trim();
-      Storage.setPremium({ reference: transRef, email });
+      PaymentView._showToast('Verifying payment with gateway...', 'info');
+
       fetch(`${Api._base()}/payment/verify-credo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ transRef, email })
-      }).catch(() => {});
-      window.history.replaceState({}, document.title, window.location.pathname);
-      PaymentView._showToast('Payment verified! Lifetime Premium Access Unlocked 🎉');
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.verified) {
+          Storage.setPremium({ reference: transRef, email });
+          PaymentView._showToast('Payment verified! Lifetime Premium Access Unlocked 🎉', 'success');
+          this.renderHeader();
+        } else {
+          Storage.clearPremium();
+          PaymentView._showToast(data.error || 'Payment was not completed. Your account has not been charged.', 'error');
+          this.renderHeader();
+        }
+      })
+      .catch(() => {
+        PaymentView._showToast('Could not verify payment with gateway. Please check your connection.', 'error');
+      });
     }
 
     // Auto-sync subscription status from backend for authenticated users
@@ -75,6 +90,9 @@ class JambWaecApp {
         if (data && data.isPremium) {
           Storage.setPremium({ reference: data.premiumReference || 'cloud_synced', email: candidateEmail.toLowerCase() });
           document.getElementById('pw-upgrade-banner-btn')?.remove();
+        } else {
+          // If backend confirms user has not paid, revoke any stale local premium
+          Storage.clearPremium();
         }
       })
       .catch(() => {});
@@ -295,30 +313,44 @@ class JambWaecApp {
   }
 
   _handleLogout() {
-    // Note: confirm() is silently blocked on many mobile browsers — don't use it.
     Auth.logout();
-    // Use replace() so the back button can't bring the user back into the app.
-    // Add a cache-bust param so the browser fetches a fresh page (not cached logged-in state).
+    try { Storage.clearUserData(); } catch (_) {}
     window.location.replace(window.location.pathname + '?t=' + Date.now());
   }
 
+  _ensureAuth() {
+    if (!Auth.isLoggedIn()) {
+      this._showAuth();
+      return false;
+    }
+    return true;
+  }
+
   navigateToDashboard() {
+    if (!this._ensureAuth()) return;
     this.currentView = "dashboard";
-    this.renderHeader();
+    try {
+      this.renderHeader();
+    } catch (_) {}
     window.scrollTo({ top: 0, behavior: 'instant' });
     const container = document.getElementById("main-app-container");
     if (container) {
       container.innerHTML = '';
     }
-    mountReactApp("main-app-container", {
-      onStartJamb: (dept, mode, customSubjects, count, year) => this.startJambExam(dept, mode, customSubjects, count, year),
-      onStartWaec: (subject, mode, year, paper) => this.startWaecExam(subject, mode, year, paper),
-      onReviewTest: (testData) => this.navigateToResult(testData),
-      onOpenStudyMode: () => this.navigateToQuestionBrowser(),
-      onOpenNovelStudy: () => this.navigateToNovelHub(),
-      onOpenProfile: () => this.navigateToProfile(),
-      onLogout: () => this._handleLogout()
-    });
+    try {
+      mountReactApp("main-app-container", {
+        onStartJamb: (dept, mode, customSubjects, count, year) => this.startJambExam(dept, mode, customSubjects, count, year),
+        onStartWaec: (subject, mode, year, paper) => this.startWaecExam(subject, mode, year, paper),
+        onReviewTest: (testData) => this.navigateToResult(testData),
+        onOpenStudyMode: () => this.navigateToQuestionBrowser(),
+        onOpenNovelStudy: () => this.navigateToNovelHub(),
+        onOpenProfile: () => this.navigateToProfile(),
+        onLogout: () => this._handleLogout()
+      });
+    } catch (mountErr) {
+      console.error('[navigateToDashboard] React mount failed:', mountErr);
+      window.location.reload();
+    }
   }
 
   navigateToProfile() {
@@ -433,6 +465,7 @@ class JambWaecApp {
    * Generic exam starter for any test payload
    */
   startExam(payload) {
+    if (!this._ensureAuth()) return;
     this.activeEngine = new CbtEngine({
       questions: payload.questions,
       examType: payload.examType || "JAMB",

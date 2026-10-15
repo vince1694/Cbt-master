@@ -33,9 +33,28 @@ const DEFAULT_SETTINGS = {
 };
 
 export const Storage = {
+  _getUserSuffix() {
+    try {
+      const email = (localStorage.getItem('cbt_user_email') || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+      if (email) return `_${email}`;
+      const session = localStorage.getItem('cbtmaster_session');
+      if (session) {
+        const parsed = JSON.parse(session);
+        if (parsed.userId) return `_${String(parsed.userId).replace(/[^a-zA-Z0-9]/g, '_')}`;
+      }
+    } catch {}
+    return '';
+  },
+
+  _getScopedKey(baseKey) {
+    const suffix = this._getUserSuffix();
+    return suffix ? `${baseKey}${suffix}` : baseKey;
+  },
+
   // User Profile
   getUserProfile() {
-    const raw = localStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+    const scopedKey = this._getScopedKey(STORAGE_KEYS.USER_PROFILE);
+    const raw = localStorage.getItem(scopedKey) || localStorage.getItem(STORAGE_KEYS.USER_PROFILE);
 
     // Helper: build a profile from any JWT / auth-key crumbs we have
     const _buildFromCloudKeys = (base = {}) => {
@@ -45,31 +64,28 @@ export const Storage = {
     };
 
     if (!raw) {
-      // If we have cloud auth keys, seed the profile from them instead of blank default
       const cloudName = localStorage.getItem('cbt_user_name');
       if (cloudName) {
         const seeded = _buildFromCloudKeys();
-        localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(seeded));
+        localStorage.setItem(scopedKey, JSON.stringify(seeded));
         return seeded;
       }
-      localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(DEFAULT_PROFILE));
+      localStorage.setItem(scopedKey, JSON.stringify(DEFAULT_PROFILE));
       return DEFAULT_PROFILE;
     }
     try {
       const parsed = JSON.parse(raw);
-      // Automatically purge legacy mock or demo user state
       if (parsed.name === 'Demo Student' || parsed.name === 'Future Scholar' || parsed.email === 'demo@cbtmaster.ng') {
         const cleaned = _buildFromCloudKeys();
-        localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(cleaned));
+        localStorage.setItem(scopedKey, JSON.stringify(cleaned));
         return cleaned;
       }
-      // If stored name is still the placeholder "Candidate" but we have a real name in auth keys, use it
       const result = { ...DEFAULT_PROFILE, ...parsed };
       const cloudName = localStorage.getItem('cbt_user_name');
       if ((result.name === 'Candidate' || !result.name) && cloudName) {
         result.name = cloudName;
         result.email = result.email || localStorage.getItem('cbt_user_email') || '';
-        localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(result));
+        localStorage.setItem(scopedKey, JSON.stringify(result));
       }
       return result;
     } catch {
@@ -80,19 +96,29 @@ export const Storage = {
   updateUserProfile(updatedData) {
     const current = this.getUserProfile();
     const merged = { ...current, ...updatedData };
-    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(merged));
+    const scopedKey = this._getScopedKey(STORAGE_KEYS.USER_PROFILE);
+    localStorage.setItem(scopedKey, JSON.stringify(merged));
     return merged;
   },
 
   // Test History
   getTestHistory() {
-    const raw = localStorage.getItem(STORAGE_KEYS.TEST_HISTORY);
-    if (!raw) return [];
-    try {
-      return JSON.parse(raw);
-    } catch {
-      return [];
+    const key = this._getScopedKey(STORAGE_KEYS.TEST_HISTORY);
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      try { return JSON.parse(raw); } catch { return []; }
     }
+    if (key !== STORAGE_KEYS.TEST_HISTORY) {
+      const legacy = localStorage.getItem(STORAGE_KEYS.TEST_HISTORY);
+      if (legacy) {
+        try {
+          const parsed = JSON.parse(legacy);
+          localStorage.setItem(key, legacy);
+          return parsed;
+        } catch {}
+      }
+    }
+    return [];
   },
 
   saveTestResult(testResult) {
@@ -103,7 +129,8 @@ export const Storage = {
       ...testResult
     };
     history.unshift(resultEntry);
-    localStorage.setItem(STORAGE_KEYS.TEST_HISTORY, JSON.stringify(history));
+    const key = this._getScopedKey(STORAGE_KEYS.TEST_HISTORY);
+    localStorage.setItem(key, JSON.stringify(history));
 
     // Update study time & streak
     this.incrementStudyTime(testResult.timeSpentMinutes || 5);
@@ -112,7 +139,8 @@ export const Storage = {
 
   // Bookmarks
   getBookmarks() {
-    const raw = localStorage.getItem(STORAGE_KEYS.BOOKMARKS);
+    const key = this._getScopedKey(STORAGE_KEYS.BOOKMARKS);
+    const raw = localStorage.getItem(key);
     if (!raw) return [];
     try {
       return JSON.parse(raw);
@@ -131,7 +159,8 @@ export const Storage = {
       bookmarks.push(questionId);
       isBookmarked = true;
     }
-    localStorage.setItem(STORAGE_KEYS.BOOKMARKS, JSON.stringify(bookmarks));
+    const key = this._getScopedKey(STORAGE_KEYS.BOOKMARKS);
+    localStorage.setItem(key, JSON.stringify(bookmarks));
     return isBookmarked;
   },
 
@@ -238,7 +267,8 @@ export const Storage = {
 
   // Daily Challenge State
   getDailyChallengeState() {
-    const raw = localStorage.getItem(STORAGE_KEYS.DAILY_CHALLENGE);
+    const key = this._getScopedKey(STORAGE_KEYS.DAILY_CHALLENGE);
+    const raw = localStorage.getItem(key);
     const today = new Date().toISOString().split("T")[0];
     const defaultState = {
       date: today,
@@ -289,7 +319,8 @@ export const Storage = {
       streak,
       lastCompletedDate: today
     };
-    localStorage.setItem(STORAGE_KEYS.DAILY_CHALLENGE, JSON.stringify(state));
+    const key = this._getScopedKey(STORAGE_KEYS.DAILY_CHALLENGE);
+    localStorage.setItem(key, JSON.stringify(state));
     // Also reward achievement if streak >= 3
     if (streak >= 3) {
       this.unlockAchievement("streak_3");
@@ -302,7 +333,8 @@ export const Storage = {
 
   // Achievements System
   getAchievements() {
-    const raw = localStorage.getItem(STORAGE_KEYS.ACHIEVEMENTS);
+    const key = this._getScopedKey(STORAGE_KEYS.ACHIEVEMENTS);
+    const raw = localStorage.getItem(key);
     if (!raw) return [];
     try {
       return JSON.parse(raw);
@@ -315,7 +347,8 @@ export const Storage = {
     const list = this.getAchievements();
     if (!list.includes(badgeId)) {
       list.push(badgeId);
-      localStorage.setItem(STORAGE_KEYS.ACHIEVEMENTS, JSON.stringify(list));
+      const key = this._getScopedKey(STORAGE_KEYS.ACHIEVEMENTS);
+      localStorage.setItem(key, JSON.stringify(list));
       return true;
     }
     return false;
@@ -323,7 +356,8 @@ export const Storage = {
 
   // Study Planner
   getStudyPlanner() {
-    const raw = localStorage.getItem(STORAGE_KEYS.STUDY_PLANNER);
+    const key = this._getScopedKey(STORAGE_KEYS.STUDY_PLANNER);
+    const raw = localStorage.getItem(key);
     const defaultPlanner = {
       targetExamDate: "2025-04-19",
       targetScore: 280,
@@ -342,8 +376,29 @@ export const Storage = {
   updateStudyPlanner(patch) {
     const current = this.getStudyPlanner();
     const updated = { ...current, ...patch };
-    localStorage.setItem(STORAGE_KEYS.STUDY_PLANNER, JSON.stringify(updated));
+    const key = this._getScopedKey(STORAGE_KEYS.STUDY_PLANNER);
+    localStorage.setItem(key, JSON.stringify(updated));
     return updated;
+  },
+
+  clearUserData() {
+    try {
+      const keysToRemove = [
+        STORAGE_KEYS.USER_PROFILE,
+        STORAGE_KEYS.TEST_HISTORY,
+        STORAGE_KEYS.BOOKMARKS,
+        STORAGE_KEYS.DAILY_CHALLENGE,
+        STORAGE_KEYS.ACHIEVEMENTS,
+        STORAGE_KEYS.STUDY_PLANNER,
+        STORAGE_KEYS.PREMIUM,
+        'cbtmaster_premium',
+        'cbt_premium_data'
+      ];
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+      Object.keys(localStorage)
+        .filter(k => k.startsWith('jamb_waec_') || k.startsWith('cbt_') || k.startsWith('cbtmaster_'))
+        .forEach(k => localStorage.removeItem(k));
+    } catch (_) {}
   },
 
   // ── Premium Access ────────────────────────────────────────────────────────
@@ -399,6 +454,19 @@ export const Storage = {
       }
     } catch {}
     return payload;
+  },
+
+  clearPremium() {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.PREMIUM);
+      localStorage.removeItem('cbtmaster_premium');
+      const profile = this.getUserProfile();
+      if (profile) {
+        profile.isPremium = false;
+        profile.premiumReference = null;
+        localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profile));
+      }
+    } catch {}
   },
 
   getPremiumData() {

@@ -144,8 +144,7 @@ export const PaymentView = {
             <div class="payment-checkout-card">
               <!-- Tabs -->
               <div class="payment-tab-row" role="tablist">
-                <button class="payment-tab active" id="ptab-online" role="tab" aria-selected="true">💳 Pay with Credo</button>
-                <button class="payment-tab" id="ptab-bank" role="tab" aria-selected="false">🏦 Bank Transfer</button>
+                <button class="payment-tab active" id="ptab-online" role="tab" aria-selected="true">💳 Pay Online (Card, Bank &amp; USSD)</button>
                 <button class="payment-tab" id="ptab-restore" role="tab" aria-selected="false">🔄 Restore Access</button>
               </div>
 
@@ -173,7 +172,7 @@ export const PaymentView = {
                   </button>
 
                   <p class="payment-security-text">
-                    🔒 Secured by Credo Payments &bull; Card, USSD &amp; Bank Transfer accepted
+                    🔒 Secured by Credo Payments &bull; Instant activation via Card, USSD &amp; Bank Transfer
                   </p>
 
                   <!-- Status Banner -->
@@ -199,53 +198,7 @@ export const PaymentView = {
                 </div>
               </div>
 
-              <!-- Tab 2: Bank Transfer -->
-              <div class="payment-tab-panel" id="ppanel-bank" style="display:none">
-                <div class="bank-details-card">
-                  <div class="bank-header">
-                    <span>🏦</span>
-                    <strong>Direct Bank Transfer</strong>
-                  </div>
-                  <div class="bank-info-row">
-                    <span>Bank</span>
-                    <strong>Moniepoint MFB</strong>
-                  </div>
-                  <div class="bank-info-row">
-                    <span>Account Number</span>
-                    <strong class="copyable-acct" id="p-bank-acct" title="Tap to copy">
-                      8171521965
-                      <span class="copy-badge">📋 Tap to Copy</span>
-                    </strong>
-                  </div>
-                  <div class="bank-info-row">
-                    <span>Account Name</span>
-                    <strong>Bethel David</strong>
-                  </div>
-                  <div class="bank-info-row">
-                    <span>Amount</span>
-                    <strong class="amount-highlight">&#8358;2,000 exactly</strong>
-                  </div>
-                  <div class="bank-tip">
-                    ⚡ Make a direct transfer of &#8358;2,000, then send your proof via WhatsApp for instant activation within 5 minutes.
-                  </div>
-                </div>
-
-                <a
-                  href="https://wa.me/2348052439479?text=Hi%2C%20I%20just%20paid%20%E2%82%A62%2C000%20for%20CBT%20Master%20Premium.%20Please%20activate%20my%20account%3A%20${encodeURIComponent(currentEmail || 'my account')}"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="payment-whatsapp-btn"
-                  id="p-whatsapp-btn"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                  </svg>
-                  Send Payment Proof on WhatsApp
-                </a>
-                <p class="bank-help-text">Instant customer support: 8:00 AM – 10:00 PM (Daily)</p>
-              </div>
-
-              <!-- Tab 3: Restore Access -->
+              <!-- Tab 2: Restore Access -->
               <div class="payment-tab-panel" id="ppanel-restore" style="display:none">
                 <div class="restore-panel-box">
                   <h3>Already Purchased?</h3>
@@ -279,8 +232,9 @@ export const PaymentView = {
     if (isAlreadyPremium) return;
 
     // ── Wire Tabs ────────────────────────────────────────────────────────────
-    const TABS   = ['ptab-online', 'ptab-bank', 'ptab-restore'];
-    const PANELS = ['ppanel-online', 'ppanel-bank', 'ppanel-restore'];
+    // ── Wire Tabs ────────────────────────────────────────────────────────────
+    const TABS   = ['ptab-online', 'ptab-restore'];
+    const PANELS = ['ppanel-online', 'ppanel-restore'];
 
     function switchTab(activeTabId) {
       TABS.forEach((id, i) => {
@@ -297,38 +251,12 @@ export const PaymentView = {
       document.getElementById(id)?.addEventListener('click', () => switchTab(id));
     });
 
-    // Alias for internal use
-    const tabOnline  = document.getElementById('ptab-online');
-    const tabBank    = document.getElementById('ptab-bank');
-
-    // ── WhatsApp Link Sync on Email Change ───────────────────────────────────
     const emailInput = document.getElementById('p-candidate-email');
-    const waBtn = document.getElementById('p-whatsapp-btn');
-
-    const syncWaLink = () => {
-      const email = (emailInput?.value || getUserEmail()).trim();
-      if (waBtn) {
-        waBtn.href = `https://wa.me/2348052439479?text=Hi%2C%20I%20just%20paid%20%E2%82%A62%2C000%20for%20CBT%20Master%20Premium.%20Please%20activate%20my%20account%3A%20${encodeURIComponent(email || 'my account')}`;
-      }
-    };
-
     emailInput?.addEventListener('input', () => {
       const val = emailInput.value.trim();
       if (val) {
         try { localStorage.setItem('cbt_user_email', val); } catch {}
       }
-      syncWaLink();
-    });
-
-    // ── Copy Account Number ──────────────────────────────────────────────────
-    document.getElementById('p-bank-acct')?.addEventListener('click', () => {
-      navigator.clipboard?.writeText('8171521965').then(() => {
-        const badge = document.querySelector('.copy-badge');
-        if (badge) {
-          badge.textContent = '✓ Copied!';
-          setTimeout(() => { badge.textContent = '📋 Tap to Copy'; }, 2200);
-        }
-      });
     });
 
     // ── Credo Online Payment Handler (Zero-Hang) ─────────────────────────────
@@ -448,19 +376,30 @@ export const PaymentView = {
       vBtn.textContent = 'Verifying…';
       vBtn.disabled    = true;
 
-      // Try server verify — grant optimistically either way
+      // Verify with Credo gateway
       try {
-        await fetchWithTimeout(`${Api._base()}/payment/verify-credo`, {
+        const verifyRes = await fetchWithTimeout(`${Api._base()}/payment/verify-credo`, {
           method : 'POST',
           headers: { 'Content-Type': 'application/json' },
           body   : JSON.stringify({ transRef: ref, email })
-        }, 8000);
-      } catch { /* grant anyway — never lock a user who paid */ }
+        }, 10000);
+        const data = await verifyRes.json().catch(() => ({}));
 
-      Storage.setPremium({ reference: ref, email });
-      showToast('Premium Access Activated! Welcome to CBT Master 🎉');
-      if (onGranted) setTimeout(onGranted, 600);
-      else if (onBack) setTimeout(onBack, 800);
+        if (verifyRes.ok && data.verified) {
+          Storage.setPremium({ reference: ref, email });
+          showToast('Premium Access Activated! Welcome to CBT Master 🎉');
+          if (onGranted) setTimeout(onGranted, 600);
+          else if (onBack) setTimeout(onBack, 800);
+        } else {
+          vBtn.textContent = '✅ I Have Completed Payment — Activate Now';
+          vBtn.disabled = false;
+          showStatus(data.error || 'Payment was not completed. Full payment of ₦2,000 is required.', 'error');
+        }
+      } catch (err) {
+        vBtn.textContent = '✅ I Have Completed Payment — Activate Now';
+        vBtn.disabled = false;
+        showStatus('Could not verify transaction with gateway. Please check your network and retry.', 'error');
+      }
     });
 
     // ── Restore Access Handler ───────────────────────────────────────────────

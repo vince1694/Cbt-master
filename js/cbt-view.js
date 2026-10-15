@@ -387,9 +387,14 @@ export const CbtView = {
 
     // Exit Exam
     if (exitBtn) {
-      exitBtn.addEventListener("click", () => {
+      const handleExitClick = (e) => {
+        if (e) {
+          try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+        }
         this.openExitModal(engine, onExitExam);
-      });
+      };
+      exitBtn.addEventListener("click", handleExitClick);
+      exitBtn.addEventListener("touchend", handleExitClick);
     }
 
     // Submit Exam with Confirmation Modal
@@ -435,14 +440,29 @@ export const CbtView = {
 
     document.body.appendChild(modal);
 
+    const cancelBtn = modal.querySelector("#cbt-modal-cancel-exit");
+    const confirmBtn = modal.querySelector("#cbt-modal-confirm-exit");
+
     const closeModal = (e) => {
-      if (e) { e.preventDefault(); e.stopPropagation(); }
+      if (e) {
+        try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+      }
       modal.remove();
     };
 
+    let isExiting = false;
     const confirmExit = (e) => {
-      if (e) { e.preventDefault(); e.stopPropagation(); }
-      modal.remove();
+      if (e) {
+        try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+      }
+      if (isExiting) return;
+      isExiting = true;
+
+      // 1. Remove modal immediately from DOM
+      try { modal.remove(); } catch (_) {}
+      document.getElementById("cbt-exit-modal-dialog")?.remove();
+
+      // 2. Stop timer and clear keyboard/audio listeners
       try {
         if (engine && typeof engine.destroy === 'function') {
           engine.destroy();
@@ -450,17 +470,29 @@ export const CbtView = {
       } catch (err) {
         console.warn('[CBT Exit] Cleaned engine state:', err);
       }
-      if (typeof onExitExam === 'function') {
-        onExitExam();
-      } else if (window.App && typeof window.App.navigateToDashboard === 'function') {
-        window.App.navigateToDashboard();
-      } else {
-        window.location.reload();
+
+      // 3. Immediately tear down CBT DOM elements
+      try {
+        const cbtRoom = document.getElementById("cbt-room");
+        if (cbtRoom) cbtRoom.remove();
+        const mainContainer = document.getElementById("main-app-container");
+        if (mainContainer) mainContainer.innerHTML = '';
+      } catch (_) {}
+
+      // 4. Return to Dashboard cleanly
+      try {
+        if (typeof onExitExam === 'function') {
+          onExitExam();
+        } else if (window.App && typeof window.App.navigateToDashboard === 'function') {
+          window.App.navigateToDashboard();
+        } else {
+          window.location.href = window.location.pathname;
+        }
+      } catch (navErr) {
+        console.error('[CBT Exit] Error returning to dashboard:', navErr);
+        window.location.href = window.location.pathname;
       }
     };
-
-    const cancelBtn = modal.querySelector("#cbt-modal-cancel-exit");
-    const confirmBtn = modal.querySelector("#cbt-modal-confirm-exit");
 
     cancelBtn?.addEventListener("click", closeModal);
     cancelBtn?.addEventListener("touchend", closeModal);

@@ -43,14 +43,16 @@ export const DashboardPage = ({
   const [selectedWaecPaper, setSelectedWaecPaper] = useState('Paper 1 (Objective)');
 
   useEffect(() => {
-    // Load local test history
+    // Load local test history isolated to this candidate
     try {
-      const history = JSON.parse(localStorage.getItem('jamb_waec_test_history') || '[]');
+      const email = (user?.email || authStorage.getUserEmail() || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+      const scopedKey = email ? `jamb_waec_test_history_${email}` : 'jamb_waec_test_history';
+      const history = JSON.parse(localStorage.getItem(scopedKey) || localStorage.getItem('jamb_waec_test_history') || '[]');
       setTestHistory(history);
     } catch {
       setTestHistory([]);
     }
-  }, []);
+  }, [user]);
 
   const handleOpenLeaderboard = async () => {
     setShowLeaderboard(true);
