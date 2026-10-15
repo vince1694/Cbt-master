@@ -6,7 +6,7 @@
 import { Storage } from './storage.js';
 import { Auth } from './auth.js';
 import { AuthView } from './auth-view.js';
-import { mountReactApp } from './react-app.bundle.js?v=20261015-v3';
+import { mountReactApp } from './react-app.bundle.js?v=20261015-v4';
 import { Api } from './api.js';
 import { 
   DEPARTMENTS, 
@@ -130,6 +130,13 @@ class JambWaecApp {
     this.renderHeader();
     this.navigateToDashboard();
     this.bindGlobalEvents();
+
+    // Asynchronously synchronize this candidate's cloud test history from MongoDB
+    Api.fetchMyResults().then(() => {
+      if (this.currentView === 'dashboard') {
+        this.navigateToDashboard();
+      }
+    });
   }
 
   applySettings() {

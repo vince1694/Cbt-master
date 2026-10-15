@@ -12,7 +12,7 @@ import {
   IconShieldCheck,
   IconSpinner 
 } from '../icons.jsx';
-import { authStorage, fetchLeaderboard } from '../api.js';
+import { authStorage, fetchLeaderboard, fetchMyResults, fetchCandidatePublicActivities } from '../api.js';
 
 export const DashboardPage = ({ 
   user, 
@@ -23,43 +23,84 @@ export const DashboardPage = ({
   onOpenNovelStudy, 
   onLogout 
 }) => {
-  const [profile, setProfile] = useState(() => authStorage.getProfile() || {
-    name: user?.name || authStorage.getUserName() || 'Candidate',
-    email: user?.email || authStorage.getUserEmail() || '',
-    department: user?.department || 'Science',
-    targetJambScore: user?.targetJambScore || 280,
-    targetInstitution: user?.targetInstitution || 'University of Lagos (UNILAG)',
-    preferredCourse: user?.preferredCourse || 'Computer Science',
-    streakDays: user?.streakDays || 1
+  const [profile, setProfile] = useState(() => {
+    const defaultProfile = {
+      name: user?.name || authStorage.getUserName() || 'Candidate',
+      email: user?.email || authStorage.getUserEmail() || '',
+      department: user?.department || 'Science',
+      targetJambScore: user?.targetJambScore || 280,
+      targetInstitution: user?.targetInstitution || 'University of Lagos (UNILAG)',
+      preferredCourse: user?.preferredCourse || 'Computer Science',
+      streakDays: user?.streakDays || 1
+    };
+    const stored = authStorage.getProfile();
+    if (stored && user?.email && stored.email && stored.email.toLowerCase() === user.email.toLowerCase()) {
+      return { ...defaultProfile, ...stored };
+    }
+    return defaultProfile;
   });
 
   const [testHistory, setTestHistory] = useState([]);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  const [inspectingCandidate, setInspectingCandidate] = useState(null);
+  const [loadingInspect, setLoadingInspect] = useState(false);
   const [activeSubjectModal, setActiveSubjectModal] = useState(false);
   const [selectedJambYear, setSelectedJambYear] = useState('2024');
   const [selectedWaecYear, setSelectedWaecYear] = useState('2024');
   const [selectedWaecPaper, setSelectedWaecPaper] = useState('Paper 1 (Objective)');
 
   useEffect(() => {
-    // Load local test history isolated to this candidate
+    // 1. Strictly load local test history isolated to this candidate
+    const email = (user?.email || authStorage.getUserEmail() || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+    const scopedKey = email ? `jamb_waec_test_history_${email}` : 'jamb_waec_test_history';
     try {
-      const email = (user?.email || authStorage.getUserEmail() || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
-      const scopedKey = email ? `jamb_waec_test_history_${email}` : 'jamb_waec_test_history';
-      const history = JSON.parse(localStorage.getItem(scopedKey) || localStorage.getItem('jamb_waec_test_history') || '[]');
-      setTestHistory(history);
+      const local = JSON.parse(localStorage.getItem(scopedKey) || '[]');
+      setTestHistory(local);
     } catch {
       setTestHistory([]);
     }
+
+    // 2. Sync personal cloud test history from MongoDB
+    fetchMyResults().then(cloudResults => {
+      if (Array.isArray(cloudResults) && cloudResults.length > 0) {
+        const formatted = cloudResults.map(r => ({
+          id: r._id || ('test_' + Date.now()),
+          examType: r.examType,
+          examTitle: r.examTitle,
+          department: r.department,
+          score: r.score,
+          totalQuestions: r.totalQuestions,
+          percentage: r.percentage,
+          scaledJambScore: r.scaledJambScore || Math.round((r.percentage / 100) * 400),
+          waecGrade: r.waecGrade,
+          timeSpentMinutes: r.timeSpentMinutes,
+          timestamp: r.createdAt
+        }));
+        setTestHistory(formatted);
+        if (scopedKey) {
+          localStorage.setItem(scopedKey, JSON.stringify(formatted));
+        }
+      }
+    }).catch(() => {});
   }, [user]);
 
   const handleOpenLeaderboard = async () => {
     setShowLeaderboard(true);
     setLoadingLeaderboard(true);
+    setInspectingCandidate(null);
     const data = await fetchLeaderboard();
     setLeaderboardData(data);
     setLoadingLeaderboard(false);
+  };
+
+  const handleInspectCandidate = async (candidateId) => {
+    setLoadingInspect(true);
+    setInspectingCandidate({ name: 'Loading Candidate...', loading: true });
+    const publicData = await fetchCandidatePublicActivities(candidateId);
+    setInspectingCandidate(publicData || { error: 'Could not load candidate records.' });
+    setLoadingInspect(false);
   };
 
   // Calculations
@@ -768,6 +809,7 @@ export const DashboardPage = ({
                       <th style={{ padding: '8px', textAlign: 'left' }}>Candidate</th>
                       <th style={{ padding: '8px', textAlign: 'left' }}>Track</th>
                       <th style={{ padding: '8px', textAlign: 'right' }}>UTME Score</th>
+                      <th style={{ padding: '8px', textAlign: 'center' }}>Activities</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -784,6 +826,28 @@ export const DashboardPage = ({
                         </td>
                         <td style={{ padding: '10px 8px', textAlign: 'right', color: '#10b981', fontWeight: 800 }}>
                           {entry.scaledJambScore || Math.round((entry.percentage / 100) * 400)} / 400
+                        </td>
+                        <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleInspectCandidate(entry.candidateId || entry.name)}
+                            style={{
+                              background: 'rgba(16, 185, 129, 0.15)',
+                              color: '#10b981',
+                              border: '1px solid rgba(16, 185, 129, 0.3)',
+                              borderRadius: '6px',
+                              padding: '5px 10px',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            <span>Activities</span>
+                            <span>↗</span>
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -806,6 +870,190 @@ export const DashboardPage = ({
                 }}
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Candidate Public Dashboard & Activity Modal */}
+      {inspectingCandidate && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          background: 'rgba(0,0,0,0.85)',
+          backdropFilter: 'blur(10px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: '#0f172a',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            borderRadius: '20px',
+            padding: '2rem',
+            maxWidth: '680px',
+            width: '92%',
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.6)'
+          }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fff',
+                  fontSize: '1.5rem',
+                  fontWeight: 800,
+                  boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)'
+                }}>
+                  {inspectingCandidate.name ? inspectingCandidate.name.charAt(0).toUpperCase() : 'C'}
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#fff', margin: 0 }}>
+                      {inspectingCandidate.name}
+                    </h3>
+                    <span style={{
+                      padding: '3px 8px',
+                      borderRadius: '12px',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      background: 'rgba(16, 185, 129, 0.2)',
+                      color: '#10b981',
+                      border: '1px solid rgba(16, 185, 129, 0.4)'
+                    }}>
+                      {inspectingCandidate.department || 'Science'} Track
+                    </span>
+                  </div>
+                  <p style={{ margin: '4px 0 0', color: '#94a3b8', fontSize: '0.88rem' }}>
+                    Aspiring for <strong style={{ color: '#fff' }}>{inspectingCandidate.preferredCourse || 'Undergraduate Course'}</strong> at <strong style={{ color: '#fff' }}>{inspectingCandidate.targetInstitution || 'Target University'}</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setInspectingCandidate(null)}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.4rem', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Performance Overview Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '1.5rem' }}>
+              <div style={{ background: '#1e293b', padding: '12px', borderRadius: '12px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600 }}>Target UTME</div>
+                <div style={{ color: '#38bdf8', fontSize: '1.25rem', fontWeight: 800, marginTop: '4px' }}>
+                  {inspectingCandidate.targetJambScore || 280} / 400
+                </div>
+              </div>
+
+              <div style={{ background: '#1e293b', padding: '12px', borderRadius: '12px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600 }}>Best Score</div>
+                <div style={{ color: '#10b981', fontSize: '1.25rem', fontWeight: 800, marginTop: '4px' }}>
+                  {inspectingCandidate.bestScaledJambScore || Math.round(((inspectingCandidate.highestScore || 0)/100)*400)} / 400
+                </div>
+              </div>
+
+              <div style={{ background: '#1e293b', padding: '12px', borderRadius: '12px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600 }}>Average %</div>
+                <div style={{ color: '#f59e0b', fontSize: '1.25rem', fontWeight: 800, marginTop: '4px' }}>
+                  {inspectingCandidate.averagePercentage || 0}%
+                </div>
+              </div>
+
+              <div style={{ background: '#1e293b', padding: '12px', borderRadius: '12px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600 }}>Tests Taken</div>
+                <div style={{ color: '#a855f7', fontSize: '1.25rem', fontWeight: 800, marginTop: '4px' }}>
+                  {inspectingCandidate.totalTestsTaken || 0}
+                </div>
+              </div>
+            </div>
+
+            {/* Activities List */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <h4 style={{ margin: 0, color: '#fff', fontSize: '0.95rem', fontWeight: 700 }}>
+                📋 Record of Test Activities
+              </h4>
+              <span style={{ color: '#64748b', fontSize: '0.8rem' }}>
+                {inspectingCandidate.recentActivities?.length || 0} session(s) recorded
+              </span>
+            </div>
+
+            <div style={{ overflowY: 'auto', flex: 1, border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '8px', background: '#090d16' }}>
+              {inspectingCandidate.loading ? (
+                <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
+                  <IconSpinner size={24} />
+                  <p style={{ marginTop: '8px' }}>Loading candidate activity record...</p>
+                </div>
+              ) : (!inspectingCandidate.recentActivities || inspectingCandidate.recentActivities.length === 0) ? (
+                <p style={{ color: '#64748b', textAlign: 'center', padding: '2rem', fontSize: '0.88rem' }}>
+                  No published test activity records found for this candidate yet.
+                </p>
+              ) : (
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                  <thead>
+                    <tr style={{ color: '#94a3b8', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                      <th style={{ padding: '8px', textAlign: 'left' }}>Date</th>
+                      <th style={{ padding: '8px', textAlign: 'left' }}>Exam / Simulation</th>
+                      <th style={{ padding: '8px', textAlign: 'left' }}>Track</th>
+                      <th style={{ padding: '8px', textAlign: 'right' }}>Score</th>
+                      <th style={{ padding: '8px', textAlign: 'right' }}>UTME Scale</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inspectingCandidate.recentActivities.map((act, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                        <td style={{ padding: '8px', color: '#64748b' }}>
+                          {act.date ? new Date(act.date).toLocaleDateString() : 'Recent'}
+                        </td>
+                        <td style={{ padding: '8px', color: '#fff', fontWeight: 600 }}>
+                          {act.examTitle || act.examType || 'Practice Session'}
+                        </td>
+                        <td style={{ padding: '8px', color: '#94a3b8' }}>
+                          {act.department || 'Science'}
+                        </td>
+                        <td style={{ padding: '8px', textAlign: 'right', color: '#cbd5e1' }}>
+                          {act.score} / {act.totalQuestions} ({Math.round(act.percentage)}%)
+                        </td>
+                        <td style={{ padding: '8px', textAlign: 'right', color: '#10b981', fontWeight: 800 }}>
+                          {act.scaledJambScore} / 400
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{ marginTop: '1.25rem', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setInspectingCandidate(null)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  background: '#334155',
+                  color: '#fff',
+                  border: 'none',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Back to Leaderboard
               </button>
             </div>
           </div>

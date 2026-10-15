@@ -54,43 +54,51 @@ export const Storage = {
   // User Profile
   getUserProfile() {
     const scopedKey = this._getScopedKey(STORAGE_KEYS.USER_PROFILE);
-    const raw = localStorage.getItem(scopedKey) || localStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+    const raw = localStorage.getItem(scopedKey);
+    const currentEmail = (localStorage.getItem('cbt_user_email') || '').trim().toLowerCase();
+    const currentName = localStorage.getItem('cbt_user_name') || 'Candidate';
 
-    // Helper: build a profile from any JWT / auth-key crumbs we have
-    const _buildFromCloudKeys = (base = {}) => {
-      const name = localStorage.getItem('cbt_user_name') || base.name || 'Candidate';
-      const email = localStorage.getItem('cbt_user_email') || base.email || '';
-      return { ...DEFAULT_PROFILE, ...base, name, email };
-    };
+    const _buildFresh = (base = {}) => ({
+      ...DEFAULT_PROFILE,
+      ...base,
+      name: currentName || base.name || 'Candidate',
+      email: currentEmail || base.email || ''
+    });
 
-    if (!raw) {
-      const cloudName = localStorage.getItem('cbt_user_name');
-      if (cloudName) {
-        const seeded = _buildFromCloudKeys();
-        localStorage.setItem(scopedKey, JSON.stringify(seeded));
-        return seeded;
-      }
-      localStorage.setItem(scopedKey, JSON.stringify(DEFAULT_PROFILE));
-      return DEFAULT_PROFILE;
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        // If the parsed profile email doesn't match current user, do NOT leak it!
+        if (currentEmail && parsed.email && parsed.email.toLowerCase() !== currentEmail) {
+          const fresh = _buildFresh();
+          localStorage.setItem(scopedKey, JSON.stringify(fresh));
+          return fresh;
+        }
+        return {
+          ...DEFAULT_PROFILE,
+          ...parsed,
+          ...(currentEmail ? { email: currentEmail } : {}),
+          ...(currentName && currentName !== 'Candidate' ? { name: currentName } : {})
+        };
+      } catch {}
     }
-    try {
-      const parsed = JSON.parse(raw);
-      if (parsed.name === 'Demo Student' || parsed.name === 'Future Scholar' || parsed.email === 'demo@cbtmaster.ng') {
-        const cleaned = _buildFromCloudKeys();
-        localStorage.setItem(scopedKey, JSON.stringify(cleaned));
-        return cleaned;
-      }
-      const result = { ...DEFAULT_PROFILE, ...parsed };
-      const cloudName = localStorage.getItem('cbt_user_name');
-      if ((result.name === 'Candidate' || !result.name) && cloudName) {
-        result.name = cloudName;
-        result.email = result.email || localStorage.getItem('cbt_user_email') || '';
-        localStorage.setItem(scopedKey, JSON.stringify(result));
-      }
-      return result;
-    } catch {
-      return DEFAULT_PROFILE;
+
+    // Try global key ONLY if it matches the current user's email
+    const legacy = localStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+    if (legacy) {
+      try {
+        const parsedLegacy = JSON.parse(legacy);
+        if (!currentEmail || !parsedLegacy.email || parsedLegacy.email.toLowerCase() === currentEmail) {
+          const merged = { ...DEFAULT_PROFILE, ...parsedLegacy, ...(currentEmail ? { email: currentEmail } : {}) };
+          localStorage.setItem(scopedKey, JSON.stringify(merged));
+          return merged;
+        }
+      } catch {}
     }
+
+    const seeded = _buildFresh();
+    localStorage.setItem(scopedKey, JSON.stringify(seeded));
+    return seeded;
   },
 
   updateUserProfile(updatedData) {
@@ -108,17 +116,13 @@ export const Storage = {
     if (raw) {
       try { return JSON.parse(raw); } catch { return []; }
     }
-    if (key !== STORAGE_KEYS.TEST_HISTORY) {
-      const legacy = localStorage.getItem(STORAGE_KEYS.TEST_HISTORY);
-      if (legacy) {
-        try {
-          const parsed = JSON.parse(legacy);
-          localStorage.setItem(key, legacy);
-          return parsed;
-        } catch {}
-      }
-    }
+    // Never leak or copy test history from another user on the same device!
     return [];
+  },
+
+  setTestHistory(historyList) {
+    const key = this._getScopedKey(STORAGE_KEYS.TEST_HISTORY);
+    localStorage.setItem(key, JSON.stringify(Array.isArray(historyList) ? historyList : []));
   },
 
   saveTestResult(testResult) {

@@ -998,12 +998,121 @@ app.get('/api/leaderboard', async (req, res) => {
       total: r.totalQuestions,
       percentage: r.percentage,
       scaledJambScore: r.scaledJambScore || Math.round((r.percentage / 100) * 400),
+      candidateId: r.userId ? String(r.userId) : (r.candidateEmail ? Buffer.from(r.candidateEmail).toString('hex') : String(r._id)),
       date: r.createdAt
     }));
 
     res.json(formatted);
   } catch (err) {
     res.status(500).json({ error: 'Could not retrieve leaderboard.' });
+  }
+});
+
+// Public Candidate Activity & Profile Endpoint (allows viewing candidate performance and recent activities)
+app.get('/api/candidates/:identifier/public-activities', async (req, res) => {
+  try {
+    const { identifier } = req.params;
+    if (!identifier) return res.status(400).json({ error: 'Candidate identifier required.' });
+
+    let user = null;
+    let candidateEmail = null;
+
+    // Try finding by MongoDB ObjectId
+    if (mongoose.Types.ObjectId.isValid(identifier)) {
+      user = await User.findById(identifier).select('-password -otpCode -passwordResetToken').lean();
+    }
+
+    // Try finding by email (or hex-encoded email)
+    if (!user) {
+      let decoded = identifier;
+      try {
+        if (!identifier.includes('@')) {
+          decoded = Buffer.from(identifier, 'hex').toString('utf8');
+        }
+      } catch (_) {}
+
+      if (decoded.includes('@')) {
+        candidateEmail = decoded.toLowerCase().trim();
+        user = await User.findOne({ email: candidateEmail }).select('-password -otpCode -passwordResetToken').lean();
+      }
+    }
+
+    // If no user document found by ID/email, try finding from TestResult by ID or candidateName
+    let resultsFilter = {};
+    if (user) {
+      resultsFilter = {
+        $or: [
+          { userId: user._id },
+          { candidateEmail: user.email.toLowerCase() }
+        ]
+      };
+    } else {
+      if (mongoose.Types.ObjectId.isValid(identifier)) {
+        const singleTest = await TestResult.findById(identifier).lean();
+        if (singleTest) {
+          candidateEmail = singleTest.candidateEmail;
+          if (singleTest.userId) {
+            user = await User.findById(singleTest.userId).select('-password -otpCode -passwordResetToken').lean();
+          }
+          resultsFilter = {
+            $or: [
+              { candidateName: singleTest.candidateName },
+              ...(candidateEmail ? [{ candidateEmail: candidateEmail.toLowerCase() }] : [])
+            ]
+          };
+        }
+      } else {
+        resultsFilter = { candidateName: identifier };
+      }
+    }
+
+    // Fetch this candidate's recent activity records
+    const activities = await TestResult.find(resultsFilter)
+      .sort({ createdAt: -1 })
+      .limit(30)
+      .lean();
+
+    const totalTests = activities.length;
+    let highestScore = 0;
+    let totalScore = 0;
+    activities.forEach(a => {
+      const pct = a.percentage || 0;
+      totalScore += pct;
+      if (pct > highestScore) highestScore = pct;
+    });
+
+    const averagePercentage = totalTests > 0 ? Math.round(totalScore / totalTests) : 0;
+    const bestScaledJamb = activities.reduce((max, a) => Math.max(max, a.scaledJambScore || 0), 0) || Math.round((highestScore / 100) * 400);
+
+    const publicProfile = {
+      name: user?.name || activities[0]?.candidateName || 'Candidate',
+      department: user?.department || activities[0]?.department || 'Science',
+      targetInstitution: user?.targetInstitution || 'University of Lagos (UNILAG)',
+      preferredCourse: user?.preferredCourse || 'Computer Science',
+      targetJambScore: user?.targetJambScore || 280,
+      streakDays: user?.streakDays || 1,
+      totalTestsTaken: totalTests,
+      highestScore: Math.round(highestScore),
+      bestScaledJambScore: bestScaledJamb,
+      averagePercentage,
+      recentActivities: activities.map(a => ({
+        id: a._id,
+        examTitle: a.examTitle,
+        examType: a.examType,
+        department: a.department,
+        score: a.score,
+        totalQuestions: a.totalQuestions,
+        percentage: a.percentage,
+        scaledJambScore: a.scaledJambScore || Math.round((a.percentage / 100) * 400),
+        timeSpentMinutes: a.timeSpentMinutes,
+        date: a.createdAt
+      }))
+    };
+
+    res.json(publicProfile);
+  } catch (err) {
+    console.error('Fetch public-activities error:', err);
+    res.status(500).json({ error: 'Could not load candidate public activities.' });
   }
 });
 

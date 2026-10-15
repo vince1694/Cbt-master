@@ -158,6 +158,46 @@ export const Api = {
   },
 
   /**
+   * Fetch this candidate's test history from MongoDB cloud (strictly isolated)
+   */
+  async fetchMyResults() {
+    try {
+      const token = localStorage.getItem('cbt_auth_token');
+      if (!token) return [];
+      const res = await fetch(`${API_BASE}/results/my-results`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...this._authHeaders()
+        },
+        signal: AbortSignal.timeout(8000)
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      if (data && Array.isArray(data.results)) {
+        const formatted = data.results.map(r => ({
+          id: r._id || ('test_' + Date.now()),
+          examType: r.examType,
+          examTitle: r.examTitle,
+          department: r.department,
+          score: r.score,
+          totalQuestions: r.totalQuestions,
+          percentage: r.percentage,
+          scaledJambScore: r.scaledJambScore,
+          waecGrade: r.waecGrade,
+          timeSpentMinutes: r.timeSpentMinutes,
+          timestamp: r.createdAt
+        }));
+        Storage.setTestHistory(formatted);
+        return formatted;
+      }
+      return [];
+    } catch (e) {
+      console.warn('[API] Failed to sync cloud test history:', e.message);
+      return [];
+    }
+  },
+
+  /**
    * Request a password reset email.
    */
   async forgotPassword(email) {

@@ -343,3 +343,41 @@ export async function fetchLeaderboard() {
   } catch {}
   return [];
 }
+
+/**
+ * Fetch My Results from MongoDB (Isolated to authenticated candidate)
+ */
+export async function fetchMyResults() {
+  try {
+    const token = authStorage.getToken();
+    if (!token) return [];
+    const res = await fetch(`${API_BASE}/results/my-results`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data?.results || [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Fetch Public Activities and Details of any candidate on the platform
+ */
+export async function fetchCandidatePublicActivities(candidateId) {
+  try {
+    const res = await fetch(`${API_BASE}/candidates/${encodeURIComponent(candidateId)}/public-activities`, {
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
