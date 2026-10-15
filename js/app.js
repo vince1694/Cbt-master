@@ -6,7 +6,7 @@
 import { Storage } from './storage.js';
 import { Auth } from './auth.js';
 import { AuthView } from './auth-view.js';
-import { mountReactApp } from './react-app.bundle.js?v=20261015-v4';
+import { mountReactApp } from './react-app.bundle.js?v=20261015-v5';
 import { Api } from './api.js';
 import { 
   DEPARTMENTS, 
