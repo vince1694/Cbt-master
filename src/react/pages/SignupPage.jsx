@@ -14,6 +14,7 @@ import {
   IconShieldCheck 
 } from '../icons.jsx';
 import { registerCandidate } from '../api.js';
+import { INSTITUTIONS_DATA } from '../data/institutions.js';
 
 export const SignupPage = ({ onNavigate }) => {
   const [name, setName] = useState('');
@@ -27,20 +28,6 @@ export const SignupPage = ({ onNavigate }) => {
 
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-
-  const INSTITUTIONS = [
-    'University of Lagos (UNILAG)',
-    'University of Ibadan (UI)',
-    'Obafemi Awolowo University (OAU)',
-    'University of Nigeria, Nsukka (UNN)',
-    'Ahmadu Bello University (ABU)',
-    'Federal University of Technology, Akure (FUTA)',
-    'University of Benin (UNIBEN)',
-    'University of Ilorin (UNILORIN)',
-    'Lagos State University (LASU)',
-    'Covenant University',
-    'Other Institution'
-  ];
 
   const COURSES = [
     'Computer Science',
@@ -312,10 +299,14 @@ export const SignupPage = ({ onNavigate }) => {
                   onChange={(e) => setTargetInstitution(e.target.value)}
                   style={{ cursor: 'pointer', height: '46px', padding: '0 12px' }}
                 >
-                  {INSTITUTIONS.map((inst) => (
-                    <option key={inst} value={inst} style={{ background: '#1e293b', color: '#fff' }}>
-                      {inst}
-                    </option>
+                  {INSTITUTIONS_DATA.map((group) => (
+                    <optgroup key={group.category} label={group.category} style={{ background: '#0f172a', color: '#10b981', fontWeight: 'bold' }}>
+                      {group.institutions.map((inst) => (
+                        <option key={inst} value={inst} style={{ background: '#1e293b', color: '#fff', fontWeight: 'normal' }}>
+                          {inst}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>
