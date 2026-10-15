@@ -1013,7 +1013,8 @@ app.get('/api/questions/coverage', async (req, res) => {
       totalDbQuestions: dbQuestions.length,
       dataSource: {
         primary: 'Curated Authentic Past Examination Papers',
-        apiProvider: 'ALOC Questions API (https://questions.aloc.com.ng)',
+        apiProvider: 'ALOC Past Questions API (https://aloc.com.ng)',
+        developerPortal: 'https://aloc.com.ng/dashboard/keys',
         licensing: 'Authorized Educational Practice / Public Domain Past Papers'
       },
       coverage
@@ -1129,29 +1130,69 @@ app.post('/api/questions/seed-verified', async (req, res) => {
   }
 });
 
-// 4. Server-side proxy for external licensed question providers (keeps API keys secret)
+// Helper mappings between ALOC and CBT Master subject formats
+function normalizeSubjectToAloc(subj) {
+  if (!subj) return 'mathematics';
+  const s = subj.toLowerCase().trim();
+  if (s.includes('english')) return 'english-language';
+  if (s.includes('math')) return 'mathematics';
+  if (s.includes('physic')) return 'physics';
+  if (s.includes('chemist')) return 'chemistry';
+  if (s.includes('biol')) return 'biology';
+  if (s.includes('econ')) return 'economics';
+  if (s.includes('gov')) return 'government';
+  if (s.includes('comm')) return 'commerce';
+  if (s.includes('account')) return 'accounting';
+  if (s.includes('relig') || s.includes('crk') || s.includes('crs')) return 'christian-religious-knowledge';
+  if (s.includes('lit')) return 'literature-in-english';
+  if (s.includes('geog')) return 'geography';
+  return s.replace(/\s+/g, '-');
+}
+
+function normalizeAlocSubjectToDisplay(alocSubj) {
+  const map = {
+    'mathematics': 'Mathematics',
+    'english-language': 'Use of English',
+    'physics': 'Physics',
+    'chemistry': 'Chemistry',
+    'biology': 'Biology',
+    'economics': 'Economics',
+    'government': 'Government',
+    'commerce': 'Commerce',
+    'accounting': 'Financial Accounting',
+    'christian-religious-knowledge': 'Christian Religious Studies',
+    'literature-in-english': 'Literature in English',
+    'geography': 'Geography'
+  };
+  return map[alocSubj.toLowerCase()] || alocSubj.charAt(0).toUpperCase() + alocSubj.slice(1);
+}
+
+// 4. Server-side proxy for external licensed question providers
 app.get('/api/questions/external-sync', async (req, res) => {
   try {
-    const { subject, year, type = 'utme' } = req.query;
+    const { subject, year, examType = 'jamb', limit = 20 } = req.query;
     const token = process.env.ALOC_API_TOKEN;
-    const baseUrl = process.env.ALOC_API_BASE_URL || 'https://questions.aloc.com.ng/api/v2';
+    const baseUrl = process.env.ALOC_API_BASE_URL || 'https://dev.aloc.com.ng/api/v1';
 
     if (!token) {
       return res.json({
         success: false,
         configured: false,
-        message: 'External API token (ALOC_API_TOKEN) is not configured in server environment variables. Operating securely using verified local past question archive.'
+        portalUrl: 'https://aloc.com.ng/dashboard/keys',
+        message: 'External API key (ALOC_API_TOKEN) is not configured in server/.env.'
       });
     }
 
     const queryParams = new URLSearchParams();
-    if (subject) queryParams.set('subject', subject.toLowerCase());
+    if (subject) queryParams.set('subject', normalizeSubjectToAloc(subject));
     if (year) queryParams.set('year', year);
-    if (type) queryParams.set('type', type.toLowerCase());
+    if (examType) queryParams.set('examType', examType.toLowerCase());
+    if (limit) queryParams.set('limit', limit);
 
-    const response = await fetch(`${baseUrl}/m?${queryParams.toString()}`, {
+    const response = await fetch(`${baseUrl}/questions?${queryParams.toString()}`, {
       headers: {
         'Accept': 'application/json',
+        'X-API-Key': token,
         'AccessToken': token
       },
       signal: AbortSignal.timeout(10000)
@@ -1165,6 +1206,123 @@ app.get('/api/questions/external-sync', async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: 'External question provider connection failed: ' + err.message });
+  }
+});
+
+// 5. Automated ALOC sync to MongoDB Atlas: fetches, maps, and caches in DB
+app.post('/api/questions/sync-aloc', async (req, res) => {
+  try {
+    const { subject = 'mathematics', year = 2019, examType = 'jamb', limit = 40 } = req.body;
+    const token = process.env.ALOC_API_TOKEN;
+    const baseUrl = process.env.ALOC_API_BASE_URL || 'https://dev.aloc.com.ng/api/v1';
+
+    if (!token) {
+      return res.status(400).json({ error: 'ALOC_API_TOKEN is missing in server environment variables.' });
+    }
+
+    const alocSubject = normalizeSubjectToAloc(subject);
+    const displaySubject = normalizeAlocSubjectToDisplay(alocSubject);
+    const queryParams = new URLSearchParams({
+      subject: alocSubject,
+      examType: examType.toLowerCase(),
+      limit: String(limit)
+    });
+    if (year && year !== 'All') queryParams.set('year', String(year));
+
+    const response = await fetch(`${baseUrl}/questions?${queryParams.toString()}`, {
+      headers: {
+        'Accept': 'application/json',
+        'X-API-Key': token,
+        'AccessToken': token
+      },
+      signal: AbortSignal.timeout(12000)
+    });
+
+    if (!response.ok) {
+      const errBody = await response.text();
+      return res.status(response.status).json({ error: 'ALOC API returned an error', details: errBody });
+    }
+
+    const payload = await response.json();
+    const rawQuestions = Array.isArray(payload.data) ? payload.data : [];
+
+    let inserted = 0;
+    let skipped = 0;
+
+    for (const item of rawQuestions) {
+      const qText = item.text || item.question;
+      if (!qText) continue;
+
+      const qYear = Number(item.year || year) || 2019;
+      const qExamType = (item.examType || examType).toUpperCase();
+
+      const existing = await Question.findOne({
+        examType: qExamType,
+        year: qYear,
+        subject: displaySubject,
+        question: qText
+      });
+
+      if (!existing) {
+        // Transform options map { A: "text", B: "text" } into array of { key, text }
+        let formattedOptions = [];
+        if (item.options && typeof item.options === 'object') {
+          if (Array.isArray(item.options)) {
+            formattedOptions = item.options.map((opt, idx) => ({
+              key: opt.key || String.fromCharCode(65 + idx),
+              text: opt.text || String(opt)
+            }));
+          } else {
+            formattedOptions = Object.entries(item.options).map(([k, v]) => ({
+              key: k.toUpperCase(),
+              text: String(v)
+            }));
+          }
+        }
+
+        await Question.create({
+          examType: qExamType,
+          year: qYear,
+          subject: displaySubject,
+          paper: 'Paper 1 (Objective)',
+          section: item.section || null,
+          topic: item.metadata?.subtopic || item.metadata?.topic || 'General Revision',
+          questionNumber: item.questionNumber || null,
+          passage: null,
+          question: qText,
+          options: formattedOptions,
+          correctAnswer: (item.correctAnswer || 'A').toUpperCase(),
+          explanation: item.explanation || item.metadata?.explanation || '',
+          source: `Official ${qExamType} Past Questions (${qYear}) via ALOC Official`,
+          licenseStatus: 'Licensed Educational Content',
+          verificationStatus: 'VERIFIED',
+          department: ['Science', 'Commercial', 'Arts']
+        });
+        inserted++;
+      } else {
+        skipped++;
+      }
+    }
+
+    const totalInDb = await Question.countDocuments({
+      examType: examType.toUpperCase(),
+      subject: displaySubject
+    });
+
+    res.json({
+      success: true,
+      message: `Successfully synchronized ${rawQuestions.length} questions from ALOC into MongoDB.`,
+      subject: displaySubject,
+      examType: examType.toUpperCase(),
+      year,
+      totalFetched: rawQuestions.length,
+      inserted,
+      skipped,
+      totalInDb
+    });
+  } catch (err) {
+    console.error('ALOC sync error:', err);
+    res.status(500).json({ error: 'Failed to synchronize with ALOC: ' + err.message });
   }
 });
 
