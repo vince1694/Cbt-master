@@ -93,7 +93,13 @@ app.use(async (req, res, next) => {
 });
 
 // Serve static frontend assets (HTML, CSS, JS, manifest, service worker)
-app.use(express.static(rootDir));
+app.use(express.static(rootDir, {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.js') || filePath.endsWith('sw.js') || filePath.endsWith('.json')) {
+      res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+    }
+  }
+}));
 
 // ========================================================
 // 1. Mongoose Database Models
