@@ -140,11 +140,15 @@ export async function loginCandidate(email, password, onColdStartHint) {
           authStorage.setProfile(profile);
 
           if (data.user.isPremium) {
-            localStorage.setItem('cbtmaster_premium', JSON.stringify({
+            const premiumPayload = JSON.stringify({
+              active: true,
               isPremium: true,
               reference: data.user.premiumReference || 'cloud_synced',
+              email: email.trim().toLowerCase(),
               unlockedAt: new Date().toISOString()
-            }));
+            });
+            localStorage.setItem('cbtmaster_premium', premiumPayload);
+            localStorage.setItem('cbt_master_premium_v1', premiumPayload);
           }
         }
 

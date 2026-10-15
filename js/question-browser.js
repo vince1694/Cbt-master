@@ -16,7 +16,12 @@ export const QuestionBrowser = {
   renderBrowser(container) {
     const subjects = ["All", ...new Set(allQuestions.map(q => q.subject))].sort();
     const exams = ["All", "JAMB", "WAEC"];
-    const years = ["All", "2024", "2023", "2022"];
+    const years = [
+      "All",
+      "2026", "2025", "2024", "2023", "2022", "2021", "2020",
+      "2019", "2018", "2017", "2016", "2015", "2014", "2013",
+      "2012", "2011"
+    ];
 
     const html = `
       <div class="qb-page-wrapper">
@@ -27,7 +32,7 @@ export const QuestionBrowser = {
             <span class="qb-stat-pill">Total: ${allQuestions.length} Vetted Questions</span>
           </div>
           <h1 class="qb-title">Past Questions & Topic Drills</h1>
-          <p class="qb-subtitle">Filter authentic past questions, study detailed step-by-step solutions, or launch quick 10-question drills.</p>
+          <p class="qb-subtitle">Filter authentic past questions (2011–2026), study detailed step-by-step solutions, or launch quick 10-question drills.</p>
 
           <!-- Search & Filter Controls -->
           <div class="qb-search-bar">
@@ -51,9 +56,15 @@ export const QuestionBrowser = {
             </div>
 
             <div class="qb-filter-group">
-              <label>Year:</label>
+              <label>Year (2011–2026):</label>
               <select id="qb-select-year" class="qb-select">
-                ${years.map(y => `<option value="${y}" ${y === this.activeYear ? 'selected' : ''}>${y}</option>`).join('')}
+                ${years.map(y => {
+                  let label = y;
+                  if (y === "2026") label = "2026 (Upcoming Examination)";
+                  else if (y === "2025") label = "2025 (Recent Session)";
+                  else if (y !== "All") label = `${y} Past Paper`;
+                  return `<option value="${y}" ${y === this.activeYear ? 'selected' : ''}>${label}</option>`;
+                }).join('')}
               </select>
             </div>
 
@@ -89,7 +100,7 @@ export const QuestionBrowser = {
     return allQuestions.filter(q => {
       if (this.activeSubject !== "All" && q.subject.toLowerCase() !== this.activeSubject.toLowerCase()) return false;
       if (this.activeExam !== "All" && q.exam.toUpperCase() !== this.activeExam.toUpperCase()) return false;
-      if (this.activeYear !== "All" && q.year !== this.activeYear) return false;
+      if (this.activeYear !== "All" && String(q.year) !== String(this.activeYear)) return false;
       if (this.searchQuery) {
         const query = this.searchQuery.toLowerCase();
         const inQuestion = q.question.toLowerCase().includes(query);
@@ -118,11 +129,18 @@ export const QuestionBrowser = {
     if (!listEl) return;
 
     if (pageItems.length === 0) {
+      const is2026 = this.activeYear === "2026";
       listEl.innerHTML = `
-        <div class="qb-empty-box">
-          <span class="qb-empty-icon">📂</span>
-          <h3>No questions matched your search criteria</h3>
-          <p>Try clearing your keyword or switching subjects.</p>
+        <div class="qb-empty-box" style="padding: 2.5rem 1.5rem; text-align: center; background: var(--surface-card, #1e293b); border: 1px dashed var(--border-medium, rgba(255,255,255,0.15)); border-radius: 12px; margin: 1rem 0;">
+          <span class="qb-empty-icon" style="font-size: 2.2rem; display: block; margin-bottom: 0.5rem;">${is2026 ? '⏳' : '📂'}</span>
+          <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem; color: var(--text-primary, #fff);">
+            ${is2026 ? 'Official 2026 Examination Questions Pending Council Release' : 'No questions matched your current filter'}
+          </h3>
+          <p style="color: var(--text-secondary, rgba(255,255,255,0.7)); max-width: 540px; margin: 0 auto; line-height: 1.6; font-size: 0.92rem;">
+            ${is2026
+              ? 'The official 2026 JAMB UTME / WAEC WASSCE examination papers have not yet been written or published by the respective examination councils. Please select verified past years (2011–2024) to practice authentic past papers.'
+              : 'Try clearing your keyword, selecting "All Years", or choosing another subject from the dropdown above.'}
+          </p>
         </div>
       `;
       const pagEl = container.querySelector("#qb-pagination");

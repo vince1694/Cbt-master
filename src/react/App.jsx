@@ -132,14 +132,14 @@ export const App = ({ bridgeCallbacks = {} }) => {
         {currentView === 'dashboard' && (
           <DashboardPage
             user={currentUser}
-            onStartJamb={(dept, mode, custom, count) => {
+            onStartJamb={(dept, mode, custom, count, year) => {
               if (bridgeCallbacks.onStartJamb) {
-                bridgeCallbacks.onStartJamb(dept, mode, custom, count);
+                bridgeCallbacks.onStartJamb(dept, mode, custom, count, year);
               }
             }}
-            onStartWaec={(subject, mode) => {
+            onStartWaec={(subject, mode, year, paper) => {
               if (bridgeCallbacks.onStartWaec) {
-                bridgeCallbacks.onStartWaec(subject, mode);
+                bridgeCallbacks.onStartWaec(subject, mode, year, paper);
               }
             }}
             onReviewTest={(testData) => {

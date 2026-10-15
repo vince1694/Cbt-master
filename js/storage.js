@@ -349,10 +349,31 @@ export const Storage = {
   // ── Premium Access ────────────────────────────────────────────────────────
   isPremiumActive() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEYS.PREMIUM);
-      if (!raw) return false;
-      const data = JSON.parse(raw);
-      return data && data.active === true;
+      // 1. Primary storage key check
+      const raw1 = localStorage.getItem(STORAGE_KEYS.PREMIUM);
+      if (raw1) {
+        const d1 = JSON.parse(raw1);
+        if (d1 && (d1.active === true || d1.isPremium === true)) return true;
+      }
+
+      // 2. Cross-check React bundle key ('cbtmaster_premium')
+      const raw2 = localStorage.getItem('cbtmaster_premium');
+      if (raw2) {
+        const d2 = JSON.parse(raw2);
+        if (d2 && (d2.isPremium === true || d2.active === true)) {
+          // Self-heal and sync to primary key
+          this.setPremium({ reference: d2.reference || 'restored', email: d2.email || '' });
+          return true;
+        }
+      }
+
+      // 3. User profile flag check
+      const profile = this.getUserProfile();
+      if (profile && profile.isPremium === true) {
+        return true;
+      }
+
+      return false;
     } catch {
       return false;
     }
@@ -361,17 +382,28 @@ export const Storage = {
   setPremium({ reference, email }) {
     const payload = {
       active: true,
+      isPremium: true,
       reference: reference || "manual",
       email: email || "",
       activatedAt: new Date().toISOString()
     };
-    localStorage.setItem(STORAGE_KEYS.PREMIUM, JSON.stringify(payload));
+    // Sync both primary and React keys so all app views stay permanently unlocked
+    try {
+      localStorage.setItem(STORAGE_KEYS.PREMIUM, JSON.stringify(payload));
+      localStorage.setItem('cbtmaster_premium', JSON.stringify(payload));
+      const profile = this.getUserProfile();
+      if (profile) {
+        profile.isPremium = true;
+        profile.premiumReference = reference || "manual";
+        localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profile));
+      }
+    } catch {}
     return payload;
   },
 
   getPremiumData() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEYS.PREMIUM);
+      const raw = localStorage.getItem(STORAGE_KEYS.PREMIUM) || localStorage.getItem('cbtmaster_premium');
       return raw ? JSON.parse(raw) : null;
     } catch {
       return null;

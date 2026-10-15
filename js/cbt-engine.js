@@ -209,8 +209,19 @@ export class CbtEngine {
   }
 
   destroy() {
-    if (this.timerInterval) clearInterval(this.timerInterval);
-    if (this.keyHandler) window.removeEventListener("keydown", this.keyHandler);
+    this.status = "exited";
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+    if (this.keyHandler) {
+      window.removeEventListener("keydown", this.keyHandler);
+      this.keyHandler = null;
+    }
+    if (this.audioCtx) {
+      try { this.audioCtx.close(); } catch {}
+      this.audioCtx = null;
+    }
   }
 
   getSummary() {
@@ -238,7 +249,14 @@ export class CbtEngine {
     if (this.status === "submitted") return;
     this.status = "submitted";
     this.endTime = Date.now();
-    if (this.timerInterval) clearInterval(this.timerInterval);
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+    if (this.keyHandler) {
+      window.removeEventListener("keydown", this.keyHandler);
+      this.keyHandler = null;
+    }
     this.playSound("finish");
 
     const timeSpentSeconds = this.durationSeconds - this.timeLeftSeconds;

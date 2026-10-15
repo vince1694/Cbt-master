@@ -388,10 +388,7 @@ export const CbtView = {
     // Exit Exam
     if (exitBtn) {
       exitBtn.addEventListener("click", () => {
-        if (confirm("Are you sure you want to exit? Your progress in this session will not be graded.")) {
-          engine.destroy();
-          if (onExitExam) onExitExam();
-        }
+        this.openExitModal(engine, onExitExam);
       });
     }
 
@@ -401,6 +398,56 @@ export const CbtView = {
         this.openSubmitModal(engine);
       });
     }
+  },
+
+  openExitModal(engine, onExitExam) {
+    // Remove any existing exit modal
+    document.getElementById("cbt-exit-modal-dialog")?.remove();
+
+    const modal = document.createElement("div");
+    modal.id = "cbt-exit-modal-dialog";
+    modal.className = "modal-backdrop";
+    modal.innerHTML = `
+      <div class="modal-card modal-exit" style="max-width: 440px; background: var(--surface-card, #1e293b); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 14px; padding: 1.5rem; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+        <div class="modal-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 0.85rem;">
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(239, 68, 68, 0.15); display: flex; align-items: center; justify-content: center; color: #ef4444;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </div>
+          <h3 style="margin: 0; font-size: 1.15rem; color: #fff;">Exit Examination?</h3>
+        </div>
+        <div class="modal-body" style="margin-bottom: 1.3rem;">
+          <p style="color: rgba(255,255,255,0.7); line-height: 1.55; margin: 0; font-size: 0.92rem;">
+            Are you sure you want to exit your <strong>${engine.examTitle || 'CBT Exam'}</strong>?
+            Any unsubmitted responses in this practice session will not be saved or graded.
+          </p>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button class="btn-ghost" id="cbt-modal-cancel-exit" style="padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: #fff; cursor: pointer;">
+            Resume Test
+          </button>
+          <button class="btn-primary" id="cbt-modal-confirm-exit" style="padding: 8px 18px; border-radius: 8px; background: #ef4444; border: 1px solid #dc2626; color: #fff; font-weight: 600; cursor: pointer;">
+            Yes, Exit Now
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.querySelector("#cbt-modal-cancel-exit").addEventListener("click", () => modal.remove());
+    modal.querySelector("#cbt-modal-confirm-exit").addEventListener("click", () => {
+      modal.remove();
+      try {
+        if (engine && typeof engine.destroy === 'function') {
+          engine.destroy();
+        }
+      } catch (err) {
+        console.warn('[CBT Exit] Cleaned engine state:', err);
+      }
+      if (onExitExam) {
+        onExitExam();
+      }
+    });
   },
 
   openSubmitModal(engine) {

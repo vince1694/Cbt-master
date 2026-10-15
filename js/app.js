@@ -61,6 +61,25 @@ class JambWaecApp {
       PaymentView._showToast('Payment verified! Lifetime Premium Access Unlocked 🎉');
     }
 
+    // Auto-sync subscription status from backend for authenticated users
+    const candidateEmail = (localStorage.getItem('cbt_user_email') || Storage.getUserProfile().email || '').trim();
+    if (candidateEmail && candidateEmail.includes('@')) {
+      fetch(`${Api._base()}/payment/check-premium`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: candidateEmail.toLowerCase() }),
+        signal: AbortSignal.timeout(6000)
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.isPremium) {
+          Storage.setPremium({ reference: data.premiumReference || 'cloud_synced', email: candidateEmail.toLowerCase() });
+          document.getElementById('pw-upgrade-banner-btn')?.remove();
+        }
+      })
+      .catch(() => {});
+    }
+
     // Handle JWT expiry — redirect to login cleanly
     window.addEventListener('cbt:session-expired', () => {
       Auth.logout();
@@ -436,12 +455,13 @@ class JambWaecApp {
     });
   }
 
-  startJambExam(departmentName, mode = "cbt", customSubjects = null, questionsPerSubject = 10) {
+  startJambExam(departmentName, mode = "cbt", customSubjects = null, questionsPerSubject = 10, selectedYear = null) {
     Paywall.require(() => {
-      const examData = createJambSimulation(departmentName, customSubjects, questionsPerSubject);
+      const examData = createJambSimulation(departmentName, customSubjects, questionsPerSubject, selectedYear);
       this.startExam({
         examType: "JAMB",
         title: examData.title,
+        year: examData.year,
         department: departmentName,
         subjects: examData.subjects,
         questions: examData.questions,
@@ -451,13 +471,15 @@ class JambWaecApp {
     }, 'JAMB UTME Simulator');
   }
 
-  startWaecExam(subject, mode = "cbt") {
+  startWaecExam(subject, mode = "cbt", selectedYear = null, selectedPaper = null) {
     Paywall.require(() => {
-      const examData = createWaecExam(subject, 10);
+      const examData = createWaecExam(subject, 10, selectedYear, selectedPaper);
       const profile = Storage.getUserProfile();
       this.startExam({
         examType: "WAEC",
         title: examData.title,
+        year: examData.year,
+        paper: examData.paper,
         department: profile.department,
         subjects: [subject],
         questions: examData.questions,

@@ -30,3 +30,6 @@ Thumbs.db
 # Build / Output
 dist/
 build/
+
+# Scratch & temporary test scripts
+scratch/

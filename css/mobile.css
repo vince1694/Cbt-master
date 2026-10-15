@@ -1716,3 +1716,551 @@ html, body {
     max-height: 90vh !important;
   }
 }
+
+/* ==========================================================================
+   COMPREHENSIVE MOBILE FIX — ALL PAGES
+   Result Slip, Auth Pages, Paywall, CBT Review
+   ========================================================================== */
+
+/* ── Result Page — Complete Mobile Overhaul ─────────────────────────────── */
+@media (max-width: 768px) {
+  .result-page-container {
+    padding: 1rem 0.85rem;
+    gap: 1.25rem;
+  }
+
+  /* Top bar: stack action buttons vertically */
+  .result-top-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .result-actions-top {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .result-actions-top button {
+    flex: 1;
+    min-width: 0;
+    justify-content: center;
+    font-size: 0.82rem;
+    padding: 0.55rem 0.65rem;
+    white-space: nowrap;
+  }
+
+  /* Result slip card: reduce padding */
+  .result-slip-card {
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+  }
+
+  /* Slip header: stack emblem above title block */
+  .slip-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.85rem;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .slip-emblem {
+    font-size: 0.95rem;
+    padding: 0.4rem 0.75rem;
+  }
+
+  .slip-title-block h2 {
+    font-size: 0.95rem;
+    line-height: 1.3;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .slip-title-block h3 {
+    font-size: 0.78rem;
+    line-height: 1.4;
+  }
+
+  .slip-meta {
+    font-size: 0.72rem;
+  }
+
+  /* Candidate strip: 2 columns instead of 4 */
+  .candidate-strip {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .strip-label {
+    font-size: 0.68rem;
+  }
+
+  .strip-value {
+    font-size: 0.82rem;
+  }
+
+  /* Score hero: single column */
+  .slip-score-hero {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .aggregate-number {
+    font-size: 2.5rem;
+  }
+
+  .aggregate-number .denom {
+    font-size: 1rem;
+  }
+
+  .waec-grade-letter {
+    font-size: 2.8rem;
+  }
+
+  .performance-tag {
+    font-size: 0.78rem;
+  }
+
+  .quick-stats-pills {
+    gap: 0.5rem;
+  }
+
+  .stat-pill {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .pill-title {
+    font-size: 0.75rem;
+  }
+
+  .pill-data {
+    font-size: 0.82rem;
+  }
+
+  /* Subject breakdown: single column */
+  .subject-cards-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.65rem;
+  }
+
+  .sub-breakdown-card {
+    padding: 0.75rem;
+  }
+
+  .breakdown-title {
+    font-size: 0.9rem;
+  }
+
+  /* Review section */
+  .review-header-flex {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .review-title {
+    font-size: 1.05rem;
+    line-height: 1.3;
+  }
+
+  .review-subtitle {
+    font-size: 0.78rem;
+  }
+
+  .review-filter-buttons {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .btn-filter {
+    flex: 1;
+    text-align: center;
+    font-size: 0.75rem;
+    padding: 0.4rem 0.45rem;
+    white-space: nowrap;
+  }
+
+  /* Review question cards */
+  .review-question-card {
+    padding: 1rem;
+  }
+
+  .review-q-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.6rem;
+  }
+
+  .q-meta-left {
+    gap: 0.35rem;
+  }
+
+  .q-number-pill {
+    font-size: 0.78rem;
+  }
+
+  .q-tag {
+    font-size: 0.68rem;
+    padding: 0.12rem 0.4rem;
+  }
+
+  .q-meta-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .btn-bookmark {
+    font-size: 0.72rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .answer-badge {
+    font-size: 0.7rem;
+  }
+
+  .review-question-text {
+    font-size: 0.9rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .review-passage {
+    font-size: 0.82rem;
+    padding: 0.65rem 0.8rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .review-opt-row {
+    padding: 0.55rem 0.7rem;
+    gap: 0.65rem;
+    font-size: 0.85rem;
+  }
+
+  .opt-bullet {
+    width: 24px;
+    height: 24px;
+    font-size: 0.72rem;
+  }
+
+  .status-marker {
+    font-size: 0.65rem;
+    padding: 0.12rem 0.4rem;
+    white-space: nowrap;
+  }
+
+  .explanation-box {
+    padding: 0.85rem;
+  }
+
+  .explanation-title {
+    font-size: 0.78rem;
+  }
+
+  .explanation-content {
+    font-size: 0.82rem;
+    line-height: 1.55;
+  }
+
+  /* Submit summary grid: 2 col */
+  .submit-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .summary-box .num {
+    font-size: 1.15rem;
+  }
+
+  .summary-box .lbl {
+    font-size: 0.65rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .result-page-container {
+    padding: 0.65rem;
+    gap: 1rem;
+  }
+
+  .result-slip-card {
+    padding: 1rem;
+  }
+
+  .slip-emblem {
+    font-size: 0.85rem;
+    padding: 0.35rem 0.65rem;
+  }
+
+  .slip-title-block h2 {
+    font-size: 0.85rem;
+  }
+
+  .aggregate-number {
+    font-size: 2.2rem;
+  }
+
+  .waec-grade-letter {
+    font-size: 2.4rem;
+  }
+
+  .slip-score-hero {
+    padding: 1rem;
+  }
+
+  .candidate-strip {
+    padding: 0.65rem 0.85rem;
+  }
+
+  .result-actions-top {
+    flex-direction: column;
+  }
+
+  .result-actions-top button {
+    width: 100%;
+  }
+
+  .review-question-card {
+    padding: 0.85rem;
+  }
+
+  .review-opt-row {
+    padding: 0.5rem 0.6rem;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+  }
+
+  .opt-text {
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+}
+
+/* ── Auth Pages — Responsive ───────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .auth-page {
+    grid-template-columns: 1fr !important;
+    min-height: 100vh;
+  }
+
+  /* Hide hero panel on tablet, just show form */
+  .auth-hero-panel {
+    display: none !important;
+  }
+
+  .auth-form-panel {
+    padding: 1.5rem 1rem;
+    min-height: 100vh;
+    align-items: flex-start;
+    padding-top: 3rem;
+  }
+
+  .auth-form-card {
+    max-width: 100%;
+  }
+
+  .auth-form-title {
+    font-size: 1.55rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-form-panel {
+    padding: 1.25rem 0.85rem;
+    padding-top: 2rem;
+  }
+
+  .auth-form-title {
+    font-size: 1.35rem;
+  }
+
+  .auth-form-sub {
+    font-size: 0.85rem;
+  }
+
+  .auth-fields-row {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem;
+  }
+
+  .auth-input {
+    padding: 0.65rem 0.85rem;
+    font-size: 0.92rem;
+  }
+
+  .auth-form-card .btn-primary {
+    width: 100%;
+    justify-content: center;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+  }
+
+  .auth-hero-stats {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+}
+
+/* ── Paywall Modal — Mobile Bottom Sheet ──────────────────────────────── */
+@media (max-width: 640px) {
+  .pw-backdrop {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  .pw-modal {
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+    padding: 1.25rem 1.1rem 1rem;
+    max-height: 92vh;
+  }
+
+  .pw-title {
+    font-size: 1.2rem;
+  }
+
+  .pw-subtitle {
+    font-size: 0.82rem;
+  }
+
+  .pw-features-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.4rem;
+  }
+
+  .pw-feat-row {
+    padding: 0.5rem 0.6rem;
+  }
+
+  .pw-price-banner {
+    padding: 0.75rem 0.9rem;
+  }
+
+  .pw-price-main {
+    font-size: 1.75rem;
+  }
+
+  .pw-tab-bar {
+    gap: 0.25rem;
+  }
+
+  .pw-tab {
+    font-size: 0.78rem;
+    padding: 0.5rem 0.6rem;
+  }
+
+  .pw-pay-btn {
+    font-size: 0.92rem;
+    padding: 0.85rem 1.25rem;
+  }
+
+  .pw-close-btn {
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+}
+
+/* ── WhatsApp Button — Mobile Polish ─────────────────────────────────── */
+@media (max-width: 480px) {
+  .btn-whatsapp {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+    gap: 4px;
+  }
+}
+
+/* ── CBT Exam Room — Extra Phone Tweaks ──────────────────────────────── */
+@media (max-width: 380px) {
+  .cbt-fullscreen-wrapper {
+    padding: 0.35rem 0.35rem 0.85rem !important;
+  }
+
+  .cbt-header {
+    padding: 0.4rem 0.55rem !important;
+  }
+
+  .timer-digits {
+    font-size: 1rem !important;
+  }
+
+  .cbt-tool-btn {
+    padding: 0.3rem 0.5rem !important;
+    font-size: 0.72rem !important;
+  }
+
+  .question-text {
+    font-size: 0.88rem !important;
+  }
+
+  .option-row {
+    padding: 0.55rem 0.6rem !important;
+    gap: 0.5rem !important;
+    min-height: 42px !important;
+  }
+
+  .option-key {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 0.75rem !important;
+  }
+
+  .option-label {
+    font-size: 0.82rem !important;
+  }
+
+  .btn-nav {
+    padding: 0.6rem 0.35rem !important;
+    font-size: 0.78rem !important;
+  }
+}
+
+/* ── Global Mobile Text Overflow Prevention ──────────────────────────── */
+@media (max-width: 768px) {
+  /* Prevent long headings from overflowing on result slip */
+  .slip-title-block h2,
+  .slip-title-block h3,
+  .review-title,
+  .breakdown-title,
+  .card-title {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+  }
+
+  /* Ensure all card-level containers stay within bounds */
+  .result-slip-card,
+  .review-question-card,
+  .sub-breakdown-card,
+  .stat-pill,
+  .explanation-box {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+
+  /* Review options text should wrap */
+  .opt-text {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+}
+
+/* ── Safe Area — Bottom Padding for Full-Height Pages ────────────────── */
+@supports (padding: max(0px)) {
+  @media (max-width: 768px) {
+    .result-page-container,
+    .dashboard-wrapper,
+    .novel-hub-wrapper,
+    .auth-form-panel {
+      padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+    }
+  }
+}

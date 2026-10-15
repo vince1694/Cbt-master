@@ -10,6 +10,7 @@ import { artsQuestions } from './arts.js';
 import { commercialQuestions } from './commercial.js';
 import { generalQuestions } from './general.js';
 import { novelQuestions } from './novel.js';
+import { verifiedArchiveQuestions } from './verified-archive.js';
 
 export const allQuestions = [
   ...englishQuestions,
@@ -19,7 +20,8 @@ export const allQuestions = [
   ...artsQuestions,
   ...commercialQuestions,
   ...generalQuestions,
-  ...novelQuestions
+  ...novelQuestions,
+  ...verifiedArchiveQuestions
 ];
 
 export const DEPARTMENTS = {
@@ -56,7 +58,7 @@ export function getFilteredQuestions({ exam, department, subject, year }) {
   return allQuestions.filter(q => {
     if (exam && q.exam.toUpperCase() !== exam.toUpperCase()) return false;
     if (subject && q.subject.toLowerCase() !== subject.toLowerCase()) return false;
-    if (year && q.year !== year) return false;
+    if (year && year !== "All" && String(q.year) !== String(year)) return false;
     if (department && !q.department.includes(department)) return false;
     return true;
   });
@@ -70,7 +72,6 @@ export function getSubjectsForDepartment(departmentName, exam = null) {
   if (!dept) return [];
   if (!exam) return dept.subjects;
 
-  // Filter subjects that have questions in this exam
   return dept.subjects.filter(subj => {
     return allQuestions.some(q => 
       q.subject.toLowerCase() === subj.toLowerCase() &&
@@ -81,32 +82,44 @@ export function getSubjectsForDepartment(departmentName, exam = null) {
 
 /**
  * Generate a 4-Subject JAMB UTME CBT Exam
- * Typically 4 subjects (Use of English + 3 core subjects)
+ * Supports year selection (2011–2026), subject combination, and verified markings
  */
-export function createJambSimulation(departmentName, selectedSubjects = null, questionsPerSubject = 10) {
+export function createJambSimulation(departmentName, selectedSubjects = null, questionsPerSubject = 10, selectedYear = null) {
   const dept = DEPARTMENTS[departmentName] || DEPARTMENTS.Science;
   const subjectsToUse = selectedSubjects && selectedSubjects.length === 4 
     ? selectedSubjects 
     : dept.jambDefaults;
 
   let examQuestions = [];
+  const isYearSpecific = selectedYear && selectedYear !== "All";
 
   subjectsToUse.forEach(subj => {
+    // 1. First priority: questions matching both subject and selected year
     let pool = allQuestions.filter(q => 
       q.exam === "JAMB" && 
-      q.subject.toLowerCase() === subj.toLowerCase()
+      q.subject.toLowerCase() === subj.toLowerCase() &&
+      (!isYearSpecific || String(q.year) === String(selectedYear))
     );
 
-    // If pool is smaller than requested, supplement with relevant past questions of the same subject
+    // 2. If year-specific pool is smaller than requested, supplement with relevant past questions of the same subject
     if (pool.length < questionsPerSubject) {
       const extra = allQuestions.filter(q => 
+        q.exam === "JAMB" &&
         q.subject.toLowerCase() === subj.toLowerCase() && 
         !pool.some(item => item.id === q.id)
       );
       pool = [...pool, ...extra];
     }
 
-    // Shuffle pool
+    // 3. Fallback to any exam for this subject if still insufficient
+    if (pool.length < questionsPerSubject) {
+      const generalExtra = allQuestions.filter(q =>
+        q.subject.toLowerCase() === subj.toLowerCase() &&
+        !pool.some(item => item.id === q.id)
+      );
+      pool = [...pool, ...generalExtra];
+    }
+
     const shuffled = [...pool].sort(() => 0.5 - Math.random());
     const picked = shuffled.slice(0, questionsPerSubject);
 
@@ -115,41 +128,64 @@ export function createJambSimulation(departmentName, selectedSubjects = null, qu
     }
   });
 
+  const yearTitle = isYearSpecific ? `(${selectedYear} Past Paper)` : `(${dept.name})`;
+
   return {
     examType: "JAMB",
-    title: `JAMB UTME Simulation (${dept.name})`,
+    title: `JAMB UTME Simulation ${yearTitle}`,
+    year: selectedYear || "Comprehensive",
     department: dept.name,
     subjects: subjectsToUse,
     questions: examQuestions,
-    durationMinutes: 60, // Standard practice simulation time
+    durationMinutes: 60,
     totalQuestions: examQuestions.length
   };
 }
 
 /**
  * Generate a single-subject or multi-subject WAEC WASSCE exam
+ * Supports year selection (2011–2026) and paper selection
  */
-export function createWaecExam(subject, questionsCount = 10) {
-  let pool = allQuestions.filter(q => 
-    q.exam === "WAEC" && 
-    q.subject.toLowerCase() === subject.toLowerCase()
-  );
+export function createWaecExam(subject, questionsCount = 10, selectedYear = null, selectedPaper = null) {
+  const isYearSpecific = selectedYear && selectedYear !== "All";
+
+  let pool = allQuestions.filter(q => {
+    if (q.exam !== "WAEC") return false;
+    if (q.subject.toLowerCase() !== subject.toLowerCase()) return false;
+    if (isYearSpecific && String(q.year) !== String(selectedYear)) return false;
+    if (selectedPaper && q.paper && !q.paper.toLowerCase().includes(selectedPaper.toLowerCase())) return false;
+    return true;
+  });
 
   // Supplement if needed
   if (pool.length < questionsCount) {
     const extra = allQuestions.filter(q => 
+      q.exam === "WAEC" &&
       q.subject.toLowerCase() === subject.toLowerCase() && 
       !pool.some(item => item.id === q.id)
     );
     pool = [...pool, ...extra];
   }
 
+  // Cross-exam fallback if still insufficient
+  if (pool.length < questionsCount) {
+    const extra2 = allQuestions.filter(q => 
+      q.subject.toLowerCase() === subject.toLowerCase() && 
+      !pool.some(item => item.id === q.id)
+    );
+    pool = [...pool, ...extra2];
+  }
+
   const shuffled = [...pool].sort(() => 0.5 - Math.random());
   const picked = shuffled.slice(0, questionsCount);
+  const yearTitle = isYearSpecific ? `${selectedYear} ` : '';
+  const paperTitle = selectedPaper ? ` [${selectedPaper}]` : '';
 
   return {
     examType: "WAEC",
-    title: `WAEC WASSCE Past Questions: ${subject}`,
+    title: `WAEC WASSCE ${yearTitle}Past Questions: ${subject}${paperTitle}`,
+    year: selectedYear || "Comprehensive",
+    paper: selectedPaper || "Paper 1 (Objective)",
     subject: subject,
     questions: picked,
     durationMinutes: 30,

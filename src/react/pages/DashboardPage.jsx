@@ -38,6 +38,9 @@ export const DashboardPage = ({
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   const [activeSubjectModal, setActiveSubjectModal] = useState(false);
+  const [selectedJambYear, setSelectedJambYear] = useState('2024');
+  const [selectedWaecYear, setSelectedWaecYear] = useState('2024');
+  const [selectedWaecPaper, setSelectedWaecPaper] = useState('Paper 1 (Objective)');
 
   useEffect(() => {
     // Load local test history
@@ -318,12 +321,50 @@ export const DashboardPage = ({
               Full JAMB UTME Simulator
             </h3>
             <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.5 }}>
-              Experience the real JAMB test environment: 180 questions, 2-hour official countdown timer, 8-key keyboard shortcuts (A, B, C, D, P, N, S, R) and on-screen calculator.
+              Experience the real JAMB test environment: 4-subject combination, official 8-key shortcuts (A, B, C, D, P, N, S, R) and on-screen calculator.
             </p>
+
+            <div style={{ marginTop: '14px' }}>
+              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                Examination Year (2011–2026):
+              </label>
+              <select
+                value={selectedJambYear}
+                onChange={(e) => setSelectedJambYear(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  background: 'var(--surface-elevated, rgba(255,255,255,0.06))',
+                  border: '1px solid var(--border-medium, rgba(255,255,255,0.15))',
+                  color: 'var(--text-primary, #fff)',
+                  fontWeight: 600,
+                  fontSize: '0.88rem'
+                }}
+              >
+                <option value="All">All Years Comprehensive Mix</option>
+                <option value="2026">2026 (Upcoming Mock Session)</option>
+                <option value="2025">2025 (Recent Session Archive)</option>
+                <option value="2024">2024 UTME Past Paper (Verified)</option>
+                <option value="2023">2023 UTME Past Paper (Verified)</option>
+                <option value="2022">2022 UTME Past Paper (Verified)</option>
+                <option value="2021">2021 UTME Past Paper (Verified)</option>
+                <option value="2020">2020 UTME Past Paper (Verified)</option>
+                <option value="2019">2019 UTME Past Paper (Verified)</option>
+                <option value="2018">2018 UTME Past Paper (Verified)</option>
+                <option value="2017">2017 UTME Past Paper (Verified)</option>
+                <option value="2016">2016 UTME Past Paper (Verified)</option>
+                <option value="2015">2015 UTME Past Paper (Verified)</option>
+                <option value="2014">2014 UTME Past Paper (Verified)</option>
+                <option value="2013">2013 UTME Past Paper (Verified)</option>
+                <option value="2012">2012 UTME Past Paper (Verified)</option>
+                <option value="2011">2011 UTME Past Paper (Verified)</option>
+              </select>
+            </div>
           </div>
 
           <button
-            onClick={() => onStartJamb(department, 'full', null, 180)}
+            onClick={() => onStartJamb(department, 'full', null, 40, selectedJambYear)}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -341,7 +382,7 @@ export const DashboardPage = ({
             }}
           >
             <IconPlay size={18} />
-            <span>Launch JAMB Simulation</span>
+            <span>Launch JAMB Simulation ({selectedJambYear === 'All' ? 'All Years' : selectedJambYear})</span>
           </button>
         </div>
 
@@ -554,20 +595,81 @@ export const DashboardPage = ({
             maxWidth: '480px',
             width: '90%'
           }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', margin: '0 0 1rem' }}>
-              Select Subject for Practice
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', margin: '0 0 0.5rem' }}>
+              WAEC WASSCE Practice Console
             </h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: '0 0 1.25rem' }}>
-              Choose any subject from your track for dedicated practice:
+            <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: '0 0 1rem' }}>
+              Choose year, paper type, and subject from your academic track:
             </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
+            {/* WAEC Year and Paper pickers */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '1.2rem' }}>
+              <div>
+                <label style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block', marginBottom: '4px', fontWeight: 700 }}>
+                  Year (2011–2026):
+                </label>
+                <select
+                  value={selectedWaecYear}
+                  onChange={(e) => setSelectedWaecYear(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    color: '#fff',
+                    fontSize: '0.82rem'
+                  }}
+                >
+                  <option value="All">All Years Mix</option>
+                  <option value="2026">2026 (Upcoming Mock)</option>
+                  <option value="2025">2025 (Recent Paper)</option>
+                  <option value="2024">2024 (Verified)</option>
+                  <option value="2023">2023 (Verified)</option>
+                  <option value="2022">2022 (Verified)</option>
+                  <option value="2021">2021 (Verified)</option>
+                  <option value="2020">2020 (Verified)</option>
+                  <option value="2019">2019 (Verified)</option>
+                  <option value="2018">2018 (Verified)</option>
+                  <option value="2017">2017 (Verified)</option>
+                  <option value="2016">2016 (Verified)</option>
+                  <option value="2015">2015 (Verified)</option>
+                  <option value="2014">2014 (Verified)</option>
+                  <option value="2013">2013 (Verified)</option>
+                  <option value="2012">2012 (Verified)</option>
+                  <option value="2011">2011 (Verified)</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block', marginBottom: '4px', fontWeight: 700 }}>
+                  Paper Format:
+                </label>
+                <select
+                  value={selectedWaecPaper}
+                  onChange={(e) => setSelectedWaecPaper(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    color: '#fff',
+                    fontSize: '0.82rem'
+                  }}
+                >
+                  <option value="Paper 1 (Objective)">Paper 1 (Objective)</option>
+                  <option value="Paper 2 (Theory)">Paper 2 (Theory / Essay)</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem', maxHeight: '280px', overflowY: 'auto' }}>
               {(trackSubjects[department] || trackSubjects.Science).map((subj) => (
                 <button
                   key={subj}
                   onClick={() => {
                     setActiveSubjectModal(false);
-                    onStartWaec(subj, 'standard');
+                    onStartWaec(subj, 'standard', selectedWaecYear, selectedWaecPaper);
                   }}
                   style={{
                     padding: '12px 16px',
@@ -584,7 +686,7 @@ export const DashboardPage = ({
                   }}
                 >
                   <span>{subj}</span>
-                  <span style={{ color: '#10b981', fontSize: '0.85rem' }}>Start →</span>
+                  <span style={{ color: '#10b981', fontSize: '0.85rem' }}>Practice ({selectedWaecYear === 'All' ? 'Mix' : selectedWaecYear}) →</span>
                 </button>
               ))}
             </div>

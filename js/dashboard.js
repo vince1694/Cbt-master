@@ -277,6 +277,32 @@ export const Dashboard = {
                     ${currentDept.jambDefaults.map(s => `<span class="subject-tag">${s}</span>`).join('')}
                   </div>
                 </div>
+
+                <!-- JAMB Examination Year Selector (2011–2026) -->
+                <div class="jamb-year-picker" style="margin: 0.95rem 0 0.5rem;">
+                  <label for="jamb-select-year" style="font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 4px; font-weight: 600;">
+                    Select Examination Year (2011–2026):
+                  </label>
+                  <select id="jamb-select-year" class="custom-select" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+                    <option value="All">All Years Comprehensive Mix</option>
+                    <option value="2026">2026 (Upcoming UTME Mock Exam)</option>
+                    <option value="2025">2025 (Recent Session Archive)</option>
+                    <option value="2024" selected>2024 UTME Past Paper (Verified)</option>
+                    <option value="2023">2023 UTME Past Paper (Verified)</option>
+                    <option value="2022">2022 UTME Past Paper (Verified)</option>
+                    <option value="2021">2021 UTME Past Paper (Verified)</option>
+                    <option value="2020">2020 UTME Past Paper (Verified)</option>
+                    <option value="2019">2019 UTME Past Paper (Verified)</option>
+                    <option value="2018">2018 UTME Past Paper (Verified)</option>
+                    <option value="2017">2017 UTME Past Paper (Verified)</option>
+                    <option value="2016">2016 UTME Past Paper (Verified)</option>
+                    <option value="2015">2015 UTME Past Paper (Verified)</option>
+                    <option value="2014">2014 UTME Past Paper (Verified)</option>
+                    <option value="2013">2013 UTME Past Paper (Verified)</option>
+                    <option value="2012">2012 UTME Past Paper (Verified)</option>
+                    <option value="2011">2011 UTME Past Paper (Verified)</option>
+                  </select>
+                </div>
               </div>
               <div class="launcher-buttons">
                 <button id="btn-start-jamb-sim" class="btn-primary">
@@ -307,6 +333,39 @@ export const Dashboard = {
                   <select id="waec-select-subject" class="custom-select">
                     ${currentDept.subjects.map(s => `<option value="${s}">${s}</option>`).join('')}
                   </select>
+                </div>
+
+                <!-- WAEC Year & Paper Selectors (2011–2026) -->
+                <div class="waec-pickers-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 0.85rem;">
+                  <div class="waec-year-picker">
+                    <label for="waec-select-year" style="font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 4px; font-weight: 600;">Year (2011–2026):</label>
+                    <select id="waec-select-year" class="custom-select" style="width: 100%; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+                      <option value="All">All Years Mix</option>
+                      <option value="2026">2026 (Upcoming Mock)</option>
+                      <option value="2025">2025 (Recent Paper)</option>
+                      <option value="2024" selected>2024 (Verified)</option>
+                      <option value="2023">2023 (Verified)</option>
+                      <option value="2022">2022 (Verified)</option>
+                      <option value="2021">2021 (Verified)</option>
+                      <option value="2020">2020 (Verified)</option>
+                      <option value="2019">2019 (Verified)</option>
+                      <option value="2018">2018 (Verified)</option>
+                      <option value="2017">2017 (Verified)</option>
+                      <option value="2016">2016 (Verified)</option>
+                      <option value="2015">2015 (Verified)</option>
+                      <option value="2014">2014 (Verified)</option>
+                      <option value="2013">2013 (Verified)</option>
+                      <option value="2012">2012 (Verified)</option>
+                      <option value="2011">2011 (Verified)</option>
+                    </select>
+                  </div>
+                  <div class="waec-paper-picker">
+                    <label for="waec-select-paper" style="font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 4px; font-weight: 600;">Paper Type:</label>
+                    <select id="waec-select-paper" class="custom-select" style="width: 100%; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+                      <option value="Paper 1 (Objective)">Paper 1 (Objective)</option>
+                      <option value="Paper 2 (Theory)">Paper 2 (Theory / Essay)</option>
+                    </select>
+                  </div>
                 </div>
               </div>
               <div class="launcher-buttons">
@@ -498,7 +557,9 @@ export const Dashboard = {
     if (startJambBtn) {
       startJambBtn.addEventListener("click", () => {
         const profile = Storage.getUserProfile();
-        if (onStartJamb) onStartJamb(profile.department, "cbt");
+        const yearSelect = document.getElementById("jamb-select-year");
+        const selectedYear = yearSelect ? yearSelect.value : "2024";
+        if (onStartJamb) onStartJamb(profile.department, "cbt", null, 10, selectedYear);
       });
     }
 
@@ -507,7 +568,9 @@ export const Dashboard = {
     if (openJambTutorBtn) {
       openJambTutorBtn.addEventListener("click", () => {
         const profile = Storage.getUserProfile();
-        if (onStartJamb) onStartJamb(profile.department, "study");
+        const yearSelect = document.getElementById("jamb-select-year");
+        const selectedYear = yearSelect ? yearSelect.value : "2024";
+        if (onStartJamb) onStartJamb(profile.department, "study", null, 10, selectedYear);
       });
     }
 
@@ -524,8 +587,12 @@ export const Dashboard = {
     if (startWaecBtn) {
       startWaecBtn.addEventListener("click", () => {
         const select = document.getElementById("waec-select-subject");
+        const yearSelect = document.getElementById("waec-select-year");
+        const paperSelect = document.getElementById("waec-select-paper");
         const subject = select ? select.value : "English Language";
-        if (onStartWaec) onStartWaec(subject, "cbt");
+        const selectedYear = yearSelect ? yearSelect.value : "2024";
+        const selectedPaper = paperSelect ? paperSelect.value : "Paper 1 (Objective)";
+        if (onStartWaec) onStartWaec(subject, "cbt", selectedYear, selectedPaper);
       });
     }
 
@@ -534,8 +601,12 @@ export const Dashboard = {
     if (openWaecTutorBtn) {
       openWaecTutorBtn.addEventListener("click", () => {
         const select = document.getElementById("waec-select-subject");
+        const yearSelect = document.getElementById("waec-select-year");
+        const paperSelect = document.getElementById("waec-select-paper");
         const subject = select ? select.value : "English Language";
-        if (onStartWaec) onStartWaec(subject, "study");
+        const selectedYear = yearSelect ? yearSelect.value : "2024";
+        const selectedPaper = paperSelect ? paperSelect.value : "Paper 1 (Objective)";
+        if (onStartWaec) onStartWaec(subject, "study", selectedYear, selectedPaper);
       });
     }
 
