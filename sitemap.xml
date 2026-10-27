@@ -6,7 +6,7 @@
 
   <!-- Main Homepage / CBT Practice Portal -->
   <url>
-    <loc>https://cbtmaster.guru/</loc>
+    <loc>https://www.cbtmaster.guru/</loc>
     <lastmod>2026-10-26</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
@@ -14,7 +14,7 @@
 
   <!-- JAMB UTME 4-Subject Simulator (Science, Arts, Commercial) -->
   <url>
-    <loc>https://cbtmaster.guru/?mode=jamb</loc>
+    <loc>https://www.cbtmaster.guru/?mode=jamb</loc>
     <lastmod>2026-10-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
@@ -22,7 +22,7 @@
 
   <!-- WAEC WASSCE Single Subject Drill Mode -->
   <url>
-    <loc>https://cbtmaster.guru/?mode=waec</loc>
+    <loc>https://www.cbtmaster.guru/?mode=waec</loc>
     <lastmod>2026-10-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
@@ -30,7 +30,7 @@
 
   <!-- The Life Changer Novel Hub (Summaries, Characters, Themes & Questions) -->
   <url>
-    <loc>https://cbtmaster.guru/?tab=novel</loc>
+    <loc>https://www.cbtmaster.guru/?tab=novel</loc>
     <lastmod>2026-10-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
@@ -38,7 +38,7 @@
 
   <!-- Formula Cheatsheets (Physics, Chemistry, Mathematics) -->
   <url>
-    <loc>https://cbtmaster.guru/?tab=cheatsheet</loc>
+    <loc>https://www.cbtmaster.guru/?tab=cheatsheet</loc>
     <lastmod>2026-10-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
@@ -46,7 +46,7 @@
 
   <!-- Course & Subject Combination Advisor for Nigerian Universities -->
   <url>
-    <loc>https://cbtmaster.guru/?tab=advisor</loc>
+    <loc>https://www.cbtmaster.guru/?tab=advisor</loc>
     <lastmod>2026-10-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
@@ -54,7 +54,7 @@
 
   <!-- Past Questions Drill & Interactive Question Bank -->
   <url>
-    <loc>https://cbtmaster.guru/?tab=questions</loc>
+    <loc>https://www.cbtmaster.guru/?tab=questions</loc>
     <lastmod>2026-10-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.80</priority>
@@ -62,7 +62,7 @@
 
   <!-- Daily 10-Question Sprint & National Student Leaderboard -->
   <url>
-    <loc>https://cbtmaster.guru/?tab=challenge</loc>
+    <loc>https://www.cbtmaster.guru/?tab=challenge</loc>
     <lastmod>2026-10-26</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.75</priority>

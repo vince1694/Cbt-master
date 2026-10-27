@@ -852,7 +852,7 @@ app.post('/api/payment/initialize-credo', async (req, res) => {
         currency: 'NGN',
         email: email.trim().toLowerCase(),
         reference,
-        callbackUrl: callbackUrl || (process.env.APP_URL || 'https://cbtmaster.guru') + '/?transRef=' + reference,
+        callbackUrl: callbackUrl || (process.env.APP_URL || 'https://www.cbtmaster.guru') + '/?transRef=' + reference,
         metadata: {
           customerName: name || 'Candidate',
           platform: 'CBT Master',
