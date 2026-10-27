@@ -72,6 +72,9 @@ export const connectToDatabase = async () => {
       socketTimeoutMS: 30000
     }).then(db => {
       console.log('✅ Connected successfully to MongoDB Atlas Cluster!');
+      if (typeof syncCandidateNamesMigration === 'function') {
+        syncCandidateNamesMigration().catch(err => console.warn('Candidate migration notice:', err.message));
+      }
       return db;
     }).catch(err => {
       cachedPromise = null;
@@ -151,6 +154,49 @@ const testResultSchema = new mongoose.Schema({
 });
 
 const TestResult = mongoose.model('TestResult', testResultSchema);
+
+// Safe background migration to ensure legacy 'Candidate' records get real candidate names from User profile
+let migrationRan = false;
+async function syncCandidateNamesMigration() {
+  if (migrationRan) return;
+  migrationRan = true;
+  try {
+    const unnamedResults = await TestResult.find({
+      $or: [
+        { candidateName: { $regex: /^candidate$/i } },
+        { candidateName: null },
+        { candidateName: '' }
+      ]
+    }).limit(100);
+
+    let fixedCount = 0;
+    for (const res of unnamedResults) {
+      let resolvedName = null;
+      if (res.userId) {
+        const u = await User.findById(res.userId).select('name').lean();
+        if (u && u.name && u.name.trim().toLowerCase() !== 'candidate') resolvedName = u.name.trim();
+      }
+      if (!resolvedName && res.candidateEmail) {
+        const u = await User.findOne({ email: res.candidateEmail.toLowerCase().trim() }).select('name').lean();
+        if (u && u.name && u.name.trim().toLowerCase() !== 'candidate') resolvedName = u.name.trim();
+      }
+      if (resolvedName) {
+        res.candidateName = resolvedName;
+        // Also ensure scaledJambScore is set
+        if (!res.scaledJambScore || res.scaledJambScore === 0) {
+          res.scaledJambScore = res.percentage ? Math.round((res.percentage / 100) * 400) : (res.totalQuestions > 0 ? Math.round((res.score / res.totalQuestions) * 400) : 0);
+        }
+        await res.save();
+        fixedCount++;
+      }
+    }
+    if (fixedCount > 0) {
+      console.log(`✨ [MIGRATION] Retroactively verified ${fixedCount} candidate profile names for legacy test results.`);
+    }
+  } catch (mErr) {
+    console.warn('Migration non-fatal notice:', mErr.message);
+  }
+}
 
 // Question Model for Verified Past Questions (2011–2026)
 const questionSchema = new mongoose.Schema({
@@ -516,10 +562,26 @@ app.post('/api/results', async (req, res) => {
     const resolvedUserId = authUserId || (bodyUserId ? bodyUserId : null);
     const resolvedEmail = candidateEmail ? candidateEmail.trim().toLowerCase() : null;
 
+    // Resolve true candidate name from registered profile
+    let resolvedName = candidateName;
+    if (!resolvedName || resolvedName.trim().toLowerCase() === 'candidate' || resolvedName.trim().toLowerCase() === 'student') {
+      if (resolvedUserId) {
+        const u = await User.findById(resolvedUserId).select('name').lean();
+        if (u && u.name) resolvedName = u.name;
+      }
+      if ((!resolvedName || resolvedName.trim().toLowerCase() === 'candidate') && resolvedEmail) {
+        const u = await User.findOne({ email: resolvedEmail }).select('name').lean();
+        if (u && u.name) resolvedName = u.name;
+      }
+    }
+    if (!resolvedName || resolvedName.trim().toLowerCase() === 'candidate') {
+      resolvedName = 'Scholar Candidate';
+    }
+
     const result = new TestResult({
       userId: resolvedUserId,
       candidateEmail: resolvedEmail,
-      candidateName: candidateName || 'Candidate',
+      candidateName: resolvedName.trim(),
       examType: examType || 'JAMB',
       examTitle: examTitle || 'Practice Simulation',
       department: department || 'General',
@@ -537,7 +599,7 @@ app.post('/api/results', async (req, res) => {
     if (resolvedEmail) {
       sendResultEmail({
         to: resolvedEmail,
-        name: candidateName || 'Student',
+        name: resolvedName || 'Student',
         examTitle: examTitle || 'Practice Simulation',
         examType: examType || 'JAMB',
         score,
@@ -980,30 +1042,92 @@ app.post('/api/payment/verify-credo', async (req, res) => {
   }
 });
 
-// National Leaderboard
+// National Leaderboard with Candidate Profile Data & Authentic JAMB UTME Scoring
 app.get('/api/leaderboard', async (req, res) => {
   try {
-    // Top 20 highest test results
-    const topResults = await TestResult.find()
-      .sort({ score: -1, percentage: -1 })
-      .limit(20)
+    const { department } = req.query;
+    const filter = {};
+    if (department && ['Science', 'Arts', 'Commercial'].includes(department)) {
+      filter.department = department;
+    }
+
+    // Query recent top test results populated with User profile data
+    const rawResults = await TestResult.find(filter)
+      .populate('userId', 'name targetInstitution preferredCourse department email')
+      .sort({ scaledJambScore: -1, percentage: -1, score: -1 })
+      .limit(100)
       .lean();
 
-    const formatted = topResults.map((r, i) => ({
-      rank: i + 1,
-      name: r.candidateName,
-      examType: r.examType,
-      department: r.department,
-      score: r.score,
-      total: r.totalQuestions,
-      percentage: r.percentage,
-      scaledJambScore: r.scaledJambScore || Math.round((r.percentage / 100) * 400),
-      candidateId: r.userId ? String(r.userId) : (r.candidateEmail ? Buffer.from(r.candidateEmail).toString('hex') : String(r._id)),
-      date: r.createdAt
+    // Map and deduplicate by candidate: Keep highest UTME score per unique candidate
+    const candidateBestMap = new Map();
+
+    for (const r of rawResults) {
+      // 1. Resolve candidate name directly from profile
+      let resolvedName = r.candidateName;
+      let course = r.userId?.preferredCourse || 'Degree Aspirant';
+      let institution = r.userId?.targetInstitution || 'Federal/State Varsity';
+      let dept = r.department || r.userId?.department || 'General';
+
+      if (!resolvedName || resolvedName.trim().toLowerCase() === 'candidate' || resolvedName.trim().toLowerCase() === 'student') {
+        if (r.userId && r.userId.name && r.userId.name.trim().toLowerCase() !== 'candidate') {
+          resolvedName = r.userId.name;
+        } else if (r.candidateEmail) {
+          const u = await User.findOne({ email: r.candidateEmail.toLowerCase().trim() }).select('name preferredCourse targetInstitution department').lean();
+          if (u && u.name && u.name.trim().toLowerCase() !== 'candidate') {
+            resolvedName = u.name;
+            if (u.preferredCourse) course = u.preferredCourse;
+            if (u.targetInstitution) institution = u.targetInstitution;
+            if (u.department) dept = u.department;
+          }
+        }
+      }
+
+      if (!resolvedName || resolvedName.trim().toLowerCase() === 'candidate') {
+        resolvedName = 'Scholar Candidate';
+      }
+
+      // Unique deduplication key: userId or email or normalized candidate name
+      const dedupeKey = r.userId
+        ? String(r.userId._id || r.userId)
+        : (r.candidateEmail ? r.candidateEmail.toLowerCase().trim() : resolvedName.toLowerCase().trim());
+
+      // Authentic JAMB UTME calculation (0 to 400 marks)
+      const utmeScore = (typeof r.scaledJambScore === 'number' && r.scaledJambScore > 0)
+        ? r.scaledJambScore
+        : (r.percentage ? Math.round((r.percentage / 100) * 400) : (r.totalQuestions > 0 ? Math.round((r.score / r.totalQuestions) * 400) : 0));
+
+      const existing = candidateBestMap.get(dedupeKey);
+      if (!existing || utmeScore > existing.scaledJambScore) {
+        candidateBestMap.set(dedupeKey, {
+          name: resolvedName.trim(),
+          candidateId: r.userId ? String(r.userId._id || r.userId) : (r.candidateEmail ? Buffer.from(r.candidateEmail).toString('hex') : String(r._id)),
+          candidateEmail: r.candidateEmail || (r.userId && r.userId.email) || null,
+          examType: r.examType || 'JAMB',
+          department: dept,
+          course,
+          institution,
+          score: r.score,
+          total: r.totalQuestions,
+          percentage: r.percentage,
+          scaledJambScore: Math.min(400, Math.max(0, utmeScore)),
+          date: r.createdAt
+        });
+      }
+    }
+
+    // Sort deduplicated candidates by highest UTME score descending, then percentage
+    const sortedCandidates = Array.from(candidateBestMap.values())
+      .sort((a, b) => b.scaledJambScore - a.scaledJambScore || b.percentage - a.percentage)
+      .slice(0, 30);
+
+    const formatted = sortedCandidates.map((entry, idx) => ({
+      rank: idx + 1,
+      ...entry
     }));
 
     res.json(formatted);
   } catch (err) {
+    console.error('Leaderboard error:', err);
     res.status(500).json({ error: 'Could not retrieve leaderboard.' });
   }
 });

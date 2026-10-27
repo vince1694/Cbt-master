@@ -131,6 +131,10 @@ export const Api = {
       try {
         const token = localStorage.getItem('cbt_auth_token');
         const email = localStorage.getItem('cbt_user_email');
+        const userProfile = Storage.getUserProfile();
+        const candidateName = (userProfile && userProfile.name && userProfile.name.trim() && userProfile.name.trim().toLowerCase() !== 'candidate')
+          ? userProfile.name.trim()
+          : (localStorage.getItem('cbt_user_name') || testResult.candidateName || 'Scholar Candidate');
 
         const res = await fetch(`${API_BASE}/results`, {
           method: 'POST',
@@ -140,6 +144,7 @@ export const Api = {
           },
           body: JSON.stringify({
             ...testResult,
+            candidateName,
             // Pass email so the server can trigger the result summary email
             candidateEmail: email || null,
             weakSubjects: testResult.weakSubjects || []

@@ -44,6 +44,7 @@ export const DashboardPage = ({
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  const [leaderboardFilter, setLeaderboardFilter] = useState('all');
   const [inspectingCandidate, setInspectingCandidate] = useState(null);
   const [loadingInspect, setLoadingInspect] = useState(false);
   const [activeSubjectModal, setActiveSubjectModal] = useState(false);
@@ -86,11 +87,19 @@ export const DashboardPage = ({
     }).catch(() => {});
   }, [user]);
 
-  const handleOpenLeaderboard = async () => {
+  const handleOpenLeaderboard = async (dept = leaderboardFilter) => {
     setShowLeaderboard(true);
     setLoadingLeaderboard(true);
     setInspectingCandidate(null);
-    const data = await fetchLeaderboard();
+    const data = await fetchLeaderboard(dept);
+    setLeaderboardData(data);
+    setLoadingLeaderboard(false);
+  };
+
+  const handleFilterLeaderboard = async (dept) => {
+    setLeaderboardFilter(dept);
+    setLoadingLeaderboard(true);
+    const data = await fetchLeaderboard(dept);
     setLeaderboardData(data);
     setLoadingLeaderboard(false);
   };
@@ -758,118 +767,343 @@ export const DashboardPage = ({
         <div style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0,0,0,0.75)',
-          backdropFilter: 'blur(8px)',
+          background: 'rgba(5, 10, 20, 0.85)',
+          backdropFilter: 'blur(10px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 999
+          zIndex: 999,
+          padding: '1rem'
         }}>
           <div style={{
-            background: '#1e293b',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '16px',
-            padding: '2rem',
-            maxWidth: '620px',
-            width: '90%',
-            maxHeight: '85vh',
+            background: 'linear-gradient(165deg, #111827 0%, #0f172a 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            borderRadius: '20px',
+            padding: '1.75rem',
+            maxWidth: '780px',
+            width: '100%',
+            maxHeight: '88vh',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.7)'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <IconAward size={24} className="" />
-                <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', margin: 0 }}>
-                  National UTME Leaderboard
-                </h3>
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#000',
+                    fontWeight: 900,
+                    fontSize: '1.2rem',
+                    boxShadow: '0 4px 12px rgba(251, 191, 36, 0.3)'
+                  }}>
+                    🏆
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#f8fafc', margin: 0, letterSpacing: '-0.02em' }}>
+                      National UTME Leaderboard
+                    </h3>
+                    <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>
+                      Official JAMB 400-Point Scoring • Verified Candidate Profiles
+                    </p>
+                  </div>
+                </div>
               </div>
               <button
                 onClick={() => setShowLeaderboard(false)}
-                style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.25rem', cursor: 'pointer' }}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: '#94a3b8',
+                  borderRadius: '10px',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s'
+                }}
               >
                 ✕
               </button>
             </div>
 
-            <div style={{ overflowY: 'auto', flex: 1 }}>
+            {/* Department Filter Pills */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '1.25rem', overflowX: 'auto', paddingBottom: '4px' }}>
+              {[
+                { id: 'all', label: '🌟 All Departments' },
+                { id: 'Science', label: '🔬 Science' },
+                { id: 'Arts', label: '🎨 Arts' },
+                { id: 'Commercial', label: '📊 Commercial' }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => handleFilterLeaderboard(tab.id)}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '20px',
+                    border: leaderboardFilter === tab.id ? '1px solid #10b981' : '1px solid rgba(255, 255, 255, 0.08)',
+                    background: leaderboardFilter === tab.id ? 'rgba(16, 185, 129, 0.18)' : 'rgba(255, 255, 255, 0.03)',
+                    color: leaderboardFilter === tab.id ? '#34d399' : '#94a3b8',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.15s'
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Leaderboard Table / Cards */}
+            <div style={{ overflowY: 'auto', flex: 1, paddingRight: '4px' }}>
               {loadingLeaderboard ? (
-                <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
-                  <IconSpinner size={24} />
-                  <p style={{ marginTop: '8px' }}>Loading live MongoDB leaderboard...</p>
+                <div style={{ padding: '3rem 2rem', textAlign: 'center', color: '#94a3b8' }}>
+                  <IconSpinner size={28} />
+                  <p style={{ marginTop: '12px', fontSize: '0.9rem' }}>Loading verified Nigerian scholar rankings...</p>
                 </div>
               ) : leaderboardData.length === 0 ? (
-                <p style={{ color: '#94a3b8', textAlign: 'center', padding: '2rem' }}>
-                  No candidate scores recorded yet. Be the first to rank on the national board!
-                </p>
+                <div style={{ textAlign: 'center', padding: '3.5rem 1.5rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '14px', border: '1px dashed rgba(255, 255, 255, 0.08)' }}>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>🎯</div>
+                  <h4 style={{ color: '#f8fafc', margin: '0 0 6px', fontSize: '1.05rem' }}>No Scores in this Track Yet</h4>
+                  <p style={{ color: '#94a3b8', margin: 0, fontSize: '0.85rem', maxWidth: '360px', marginInline: 'auto' }}>
+                    Complete a 4-subject JAMB UTME simulation or practice drill to claim the #1 spot on the national board!
+                  </p>
+                </div>
               ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
-                  <thead>
-                    <tr style={{ color: '#94a3b8', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                      <th style={{ padding: '8px', textAlign: 'left' }}>Rank</th>
-                      <th style={{ padding: '8px', textAlign: 'left' }}>Candidate</th>
-                      <th style={{ padding: '8px', textAlign: 'left' }}>Track</th>
-                      <th style={{ padding: '8px', textAlign: 'right' }}>UTME Score</th>
-                      <th style={{ padding: '8px', textAlign: 'center' }}>Activities</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {leaderboardData.map((entry, idx) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
-                        <td style={{ padding: '10px 8px', fontWeight: 800, color: idx < 3 ? '#f59e0b' : '#94a3b8' }}>
-                          #{entry.rank || idx + 1}
-                        </td>
-                        <td style={{ padding: '10px 8px', color: '#fff', fontWeight: 600 }}>
-                          {entry.name || 'Anonymous Scholar'}
-                        </td>
-                        <td style={{ padding: '10px 8px', color: '#94a3b8' }}>
-                          {entry.department || 'Science'}
-                        </td>
-                        <td style={{ padding: '10px 8px', textAlign: 'right', color: '#10b981', fontWeight: 800 }}>
-                          {entry.scaledJambScore || Math.round((entry.percentage / 100) * 400)} / 400
-                        </td>
-                        <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {leaderboardData.map((entry, idx) => {
+                    const isTop1 = idx === 0;
+                    const isTop2 = idx === 1;
+                    const isTop3 = idx === 2;
+                    const rankNum = entry.rank || idx + 1;
+
+                    // Check if entry represents current logged-in user
+                    const isCurrentUser = (
+                      (profile.email && entry.candidateEmail && profile.email.toLowerCase().trim() === entry.candidateEmail.toLowerCase().trim()) ||
+                      (profile.name && entry.name && profile.name.trim().toLowerCase() === entry.name.trim().toLowerCase())
+                    );
+
+                    // Extract initials
+                    const nameParts = (entry.name || 'Scholar Candidate').trim().split(/\s+/);
+                    const initials = nameParts.length === 1
+                      ? nameParts[0].substring(0, 2).toUpperCase()
+                      : (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+
+                    // Deterministic vibrant avatar background
+                    const avatarGradients = [
+                      'linear-gradient(135deg, #10b981 0%, #047857 100%)',
+                      'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                      'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                      'linear-gradient(135deg, #f59e0b 0%, #b45309 100%)',
+                      'linear-gradient(135deg, #ec4899 0%, #be185d 100%)',
+                      'linear-gradient(135deg, #06b6d4 0%, #0e7490 100%)'
+                    ];
+                    let hash = 0;
+                    for (let i = 0; i < (entry.name || '').length; i++) {
+                      hash = entry.name.charCodeAt(i) + ((hash << 5) - hash);
+                    }
+                    const avatarBg = avatarGradients[Math.abs(hash) % avatarGradients.length];
+
+                    // Competitiveness tier
+                    const score = entry.scaledJambScore || 0;
+                    let compBadge = { text: 'Developing', bg: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: 'rgba(245, 158, 11, 0.3)' };
+                    if (score >= 300) {
+                      compBadge = { text: '🏆 Elite (300+)', bg: 'rgba(168, 85, 247, 0.2)', color: '#c084fc', border: 'rgba(168, 85, 247, 0.4)' };
+                    } else if (score >= 250) {
+                      compBadge = { text: '🌟 Highly Competitive', bg: 'rgba(16, 185, 129, 0.18)', color: '#34d399', border: 'rgba(16, 185, 129, 0.35)' };
+                    } else if (score >= 200) {
+                      compBadge = { text: '✅ Varsity Pass', bg: 'rgba(2, 132, 199, 0.18)', color: '#38bdf8', border: 'rgba(2, 132, 199, 0.35)' };
+                    }
+
+                    return (
+                      <div
+                        key={idx}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          padding: '12px 14px',
+                          borderRadius: '12px',
+                          background: isCurrentUser
+                            ? 'rgba(16, 185, 129, 0.1)'
+                            : isTop1
+                            ? 'rgba(251, 191, 36, 0.06)'
+                            : 'rgba(255, 255, 255, 0.03)',
+                          border: isCurrentUser
+                            ? '1px solid rgba(16, 185, 129, 0.45)'
+                            : isTop1
+                            ? '1px solid rgba(251, 191, 36, 0.3)'
+                            : '1px solid rgba(255, 255, 255, 0.06)',
+                          transition: 'transform 0.15s ease'
+                        }}
+                      >
+                        {/* Rank Badge */}
+                        <div style={{
+                          minWidth: '40px',
+                          textAlign: 'center',
+                          fontWeight: 900,
+                          fontSize: isTop1 || isTop2 || isTop3 ? '1.25rem' : '0.92rem',
+                          color: isTop1 ? '#fbbf24' : isTop2 ? '#cbd5e1' : isTop3 ? '#f97316' : '#64748b'
+                        }}>
+                          {isTop1 ? '🥇' : isTop2 ? '🥈' : isTop3 ? '🥉' : `#${rankNum}`}
+                        </div>
+
+                        {/* Candidate Avatar */}
+                        <div style={{
+                          width: '42px',
+                          height: '42px',
+                          borderRadius: '50%',
+                          background: avatarBg,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 800,
+                          fontSize: '0.88rem',
+                          color: '#ffffff',
+                          flexShrink: 0,
+                          boxShadow: isTop1 ? '0 0 10px rgba(251, 191, 36, 0.35)' : 'none'
+                        }}>
+                          {initials}
+                        </div>
+
+                        {/* Candidate Details */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.95rem' }}>
+                              {entry.name || 'Scholar Candidate'}
+                            </span>
+                            {isCurrentUser && (
+                              <span style={{
+                                background: '#10b981',
+                                color: '#022c22',
+                                fontSize: '0.65rem',
+                                fontWeight: 800,
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                letterSpacing: '0.04em'
+                              }}>
+                                YOU
+                              </span>
+                            )}
+                            <span style={{
+                              fontSize: '0.7rem',
+                              color: entry.department === 'Science' ? '#38bdf8' : entry.department === 'Arts' ? '#c084fc' : '#fbbf24',
+                              background: 'rgba(255, 255, 255, 0.05)',
+                              padding: '2px 6px',
+                              borderRadius: '4px'
+                            }}>
+                              {entry.department || 'Science'}
+                            </span>
+                          </div>
+                          <div style={{
+                            fontSize: '0.76rem',
+                            color: '#94a3b8',
+                            marginTop: '2px',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}>
+                            {entry.course || 'Degree Candidate'} • {entry.institution || 'University Aspirant'}
+                          </div>
+                        </div>
+
+                        {/* JAMB UTME Score & Status */}
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: '3px' }}>
+                            <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#10b981', letterSpacing: '-0.02em' }}>
+                              {score}
+                            </span>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>
+                              / 400
+                            </span>
+                          </div>
+                          <div style={{
+                            display: 'inline-block',
+                            marginTop: '2px',
+                            padding: '2px 8px',
+                            borderRadius: '10px',
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            background: compBadge.bg,
+                            color: compBadge.color,
+                            border: `1px solid ${compBadge.border}`
+                          }}>
+                            {compBadge.text}
+                          </div>
+                        </div>
+
+                        {/* Inspect Candidate Activities */}
+                        <div style={{ flexShrink: 0 }}>
                           <button
                             type="button"
                             onClick={() => handleInspectCandidate(entry.candidateId || entry.name)}
+                            title="Inspect Candidate Exam Performance"
                             style={{
-                              background: 'rgba(16, 185, 129, 0.15)',
+                              background: 'rgba(16, 185, 129, 0.12)',
                               color: '#10b981',
                               border: '1px solid rgba(16, 185, 129, 0.3)',
-                              borderRadius: '6px',
-                              padding: '5px 10px',
+                              borderRadius: '8px',
+                              padding: '6px 10px',
                               fontSize: '0.78rem',
                               fontWeight: 700,
                               cursor: 'pointer',
                               display: 'inline-flex',
                               alignItems: 'center',
-                              gap: '4px'
+                              gap: '4px',
+                              transition: 'all 0.15s'
                             }}
                           >
                             <span>Activities</span>
-                            <span>↗</span>
+                            <span style={{ fontSize: '0.85rem' }}>↗</span>
                           </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
 
-            <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)', textAlign: 'right' }}>
+            {/* Modal Footer */}
+            <div style={{
+              marginTop: '1.25rem',
+              paddingTop: '1rem',
+              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                💡 Rankings update automatically as students complete exams.
+              </span>
               <button
                 onClick={() => setShowLeaderboard(false)}
                 style={{
-                  padding: '8px 16px',
-                  borderRadius: '8px',
+                  padding: '9px 20px',
+                  borderRadius: '10px',
                   background: '#10b981',
                   color: '#022c22',
                   border: 'none',
                   fontWeight: 700,
-                  cursor: 'pointer'
+                  fontSize: '0.88rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                  transition: 'all 0.15s'
                 }}
               >
-                Close
+                Close Leaderboard
               </button>
             </div>
           </div>

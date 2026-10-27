@@ -52,7 +52,7 @@ export const ResultView = {
           <div class="candidate-strip">
             <div class="strip-col">
               <span class="strip-label">Candidate Name:</span>
-              <span class="strip-value">${profile.name}</span>
+              <span class="strip-value">${resultData.candidateName || profile.name || 'Scholar Candidate'}</span>
             </div>
             <div class="strip-col">
               <span class="strip-label">Department:</span>
@@ -72,10 +72,14 @@ export const ResultView = {
           <div class="slip-score-hero">
             ${isJamb ? `
               <div class="jamb-aggregate-box">
-                <span class="score-label">AGGREGATE UTME SCORE</span>
+                <span class="score-label">AUTHENTIC AGGREGATE UTME SCORE</span>
                 <div class="aggregate-number">${resultData.scaledJambScore} <span class="denom">/ 400</span></div>
                 <div class="performance-tag ${resultData.scaledJambScore >= 250 ? 'tag-high' : 'tag-moderate'}">
-                  ${resultData.scaledJambScore >= 250 ? '🌟 Highly Competitive for University Admission' : '⚡ Keep Practicing to Reach Target'}
+                  ${resultData.scaledJambScore >= 300 ? '🏆 Elite Top 1% — Competitive for Medicine, Law, Software Eng (UNILAG/UI/OAU)' :
+                    resultData.scaledJambScore >= 250 ? '🌟 Highly Competitive for First-Choice University Admission' :
+                    resultData.scaledJambScore >= 200 ? '✅ Above University National Cut-off Benchmark (Degree Eligible)' :
+                    resultData.scaledJambScore >= 160 ? '⚡ Eligible for Polytechnics & Select Varsities' :
+                    '⚠️ Remediation Needed — Revise Key Topics'}
                 </div>
               </div>
             ` : `
@@ -106,14 +110,18 @@ export const ResultView = {
 
           <!-- Subject Breakdown Grid -->
           <div class="subject-breakdown-section">
-            <h4 class="breakdown-title">Subject Performance Analysis</h4>
+            <h4 class="breakdown-title">Official UTME Subject Performance (Each scored out of 100 marks)</h4>
             <div class="subject-cards-grid">
               ${Object.entries(resultData.subjectBreakdown || {}).map(([subject, stat]) => `
                 <div class="sub-breakdown-card">
                   <div class="card-subject-name">${subject}</div>
                   <div class="card-subject-score">
-                    <strong>${stat.correct}</strong> / ${stat.total}
-                    <span class="subj-pct">(${stat.percentage}%)</span>
+                    <div style="font-size: 1.15rem; font-weight: 800; color: #10b981;">
+                      ${stat.jambMark !== undefined ? stat.jambMark : stat.percentage} <span style="font-size: 0.78rem; font-weight: 600; color: #94a3b8;">/ 100 marks</span>
+                    </div>
+                    <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 2px;">
+                      ${stat.correct} / ${stat.total} questions (${stat.percentage}%)
+                    </div>
                   </div>
                   <div class="sub-bar-bg">
                     <div class="sub-bar-fill" style="width: ${stat.percentage}%;"></div>

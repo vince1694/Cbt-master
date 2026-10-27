@@ -332,11 +332,14 @@ export async function completePasswordReset(email, otp, newPassword) {
 /**
  * Fetch Leaderboard
  */
-export async function fetchLeaderboard() {
+export async function fetchLeaderboard(department = 'all') {
   try {
     const token = authStorage.getToken();
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-    const res = await fetch(`${API_BASE}/leaderboard`, { headers, signal: AbortSignal.timeout(10000) });
+    const url = department && department !== 'all'
+      ? `${API_BASE}/leaderboard?department=${encodeURIComponent(department)}`
+      : `${API_BASE}/leaderboard`;
+    const res = await fetch(url, { headers, signal: AbortSignal.timeout(10000) });
     if (res.ok) {
       return await res.json();
     }

@@ -280,27 +280,49 @@ export class CbtEngine {
       if (isCorrect) subjectBreakdown[q.subject].correct++;
     });
 
-    // Compute subject percentages
-    Object.keys(subjectBreakdown).forEach(subj => {
+    // Compute subject percentages and official JAMB marks (each subject scored out of 100)
+    let jambAggregateSum = 0;
+    const subjectList = Object.keys(subjectBreakdown);
+    subjectList.forEach(subj => {
       const data = subjectBreakdown[subj];
-      data.percentage = Math.round((data.correct / data.total) * 100);
+      data.percentage = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
+      // Authentic JAMB UTME style: each subject receives an official score out of 100 marks
+      data.jambMark = data.percentage;
+      jambAggregateSum += data.jambMark;
     });
 
     const scorePercentage = this.questions.length > 0
       ? Math.round((correctCount / this.questions.length) * 100)
       : 0;
 
-    // Scaled JAMB score (Scale to 400 marks)
-    const scaledJambScore = this.questions.length > 0
-      ? Math.round((correctCount / this.questions.length) * 400)
-      : 0;
+    // Authentic JAMB Aggregate UTME Score (4 subjects x 100 = 400 marks max)
+    let scaledJambScore = 0;
+    if (subjectList.length === 4) {
+      // Full 4-subject combination: direct sum of the 4 subject marks out of 100
+      scaledJambScore = jambAggregateSum;
+    } else if (subjectList.length > 0) {
+      // Partial drill or single subject: scale the average subject performance out of 400
+      scaledJambScore = Math.round((jambAggregateSum / subjectList.length) * 4);
+    } else {
+      scaledJambScore = this.questions.length > 0
+        ? Math.round((correctCount / this.questions.length) * 400)
+        : 0;
+    }
+    scaledJambScore = Math.min(400, Math.max(0, scaledJambScore));
 
     // WAEC Grade
     const waecGrade = calculateWaecGrade(scorePercentage);
 
+    // Retrieve active student profile name
+    const activeProfile = Storage.getUserProfile();
+    const resolvedCandidateName = (activeProfile && activeProfile.name && activeProfile.name.trim() && activeProfile.name.trim().toLowerCase() !== 'candidate')
+      ? activeProfile.name.trim()
+      : (localStorage.getItem('cbt_user_name') || 'Scholar Candidate');
+
     const result = {
       examType: this.examType,
       examTitle: this.examTitle,
+      candidateName: resolvedCandidateName,
       department: this.department,
       totalQuestions: this.questions.length,
       score: correctCount,
