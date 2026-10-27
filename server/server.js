@@ -95,10 +95,22 @@ app.use(async (req, res, next) => {
   next();
 });
 
+// Dedicated handler for Service Worker to ensure valid MIME type, scope permission, and fresh cache
+app.get('/sw.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+  res.setHeader('Service-Worker-Allowed', '/');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.sendFile(path.join(rootDir, 'sw.js'));
+});
+
 // Serve static frontend assets (HTML, CSS, JS, manifest, service worker, images)
 app.use(express.static(rootDir, {
   setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.js') || filePath.endsWith('sw.js') || filePath.endsWith('.json')) {
+    if (filePath.endsWith('sw.js')) {
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      res.setHeader('Service-Worker-Allowed', '/');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    } else if (filePath.endsWith('.js') || filePath.endsWith('.json')) {
       res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
     } else if (filePath.endsWith('.png') || filePath.endsWith('.ico') || filePath.endsWith('.svg')) {
       res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');

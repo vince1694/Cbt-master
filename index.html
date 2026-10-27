@@ -289,7 +289,15 @@
       });
       window.addEventListener('unhandledrejection', function (e) {
         var r = e.reason;
-        _showErr('Error: ' + ((r && r.message) ? r.message : String(r || 'unknown')));
+        var msg = (r && r.message) ? r.message : String(r || 'unknown');
+        var stack = (r && r.stack) ? String(r.stack) : '';
+        // Ignore non-fatal third-party extension interventions (e.g. Trend Micro wrsParams, ResizeObserver, adblockers)
+        if (/wrsParams|serviceWorker|ResizeObserver|chrome-extension|moz-extension/i.test(msg) ||
+            /wrsParams|serviceWorker/i.test(stack)) {
+          console.warn('[PWA] Handled non-fatal browser/extension notice:', msg);
+          return;
+        }
+        _showErr('Error: ' + msg);
       });
 
       // Dynamically inject the ES module with cache busting
@@ -305,14 +313,25 @@
 
   <!-- PWA Service Worker Registration -->
   <script>
-    if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
       window.addEventListener('load', function () {
-        navigator.serviceWorker.register('./sw.js').then(function (reg) {
-          if (reg && reg.update) reg.update();
-          console.log('[PWA] ServiceWorker registered:', reg.scope);
-        }).catch(function (err) {
-          console.log('[PWA] ServiceWorker failed:', err);
-        });
+        try {
+          // Use fully-qualified canonical URL so extension proxies (Trend Micro WRS, etc.) don't fail relative path resolution
+          var swUrl = new URL('/sw.js', window.location.origin).href;
+          navigator.serviceWorker.register(swUrl, { scope: '/' }).then(function (reg) {
+            console.log('[PWA] ServiceWorker registered with scope:', reg.scope);
+            if (reg && typeof reg.update === 'function') {
+              setTimeout(function () {
+                reg.update().catch(function () {});
+              }, 3000);
+            }
+          }).catch(function (err) {
+            // Rejection by browser security extensions or private mode is non-fatal — the app runs normally
+            console.warn('[PWA] ServiceWorker registration bypassed by browser/extension policy:', err.message || err);
+          });
+        } catch (swErr) {
+          console.warn('[PWA] ServiceWorker initialization notice:', swErr);
+        }
       });
     }
   </script>
