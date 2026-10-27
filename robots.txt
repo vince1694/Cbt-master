@@ -1,0 +1,18 @@
+# CBT Master Robots.txt
+# Platform: JAMB UTME & WAEC WASSCE Practice Portal
+# Canonical URL: https://cbtmaster.guru
+
+User-agent: *
+Allow: /
+Allow: /css/
+Allow: /js/
+Allow: /manifest.json
+Allow: /sw.js
+
+# Prevent search engine crawlers from indexing private backend API endpoints
+Disallow: /api/
+Disallow: /server/
+
+# Host & Sitemap Directives
+Host: https://cbtmaster.guru
+Sitemap: https://cbtmaster.guru/sitemap.xml
