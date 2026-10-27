@@ -6,6 +6,8 @@
  * 100+ formulas per subject for complete JAMB UTME & WAEC WASSCE coverage.
  */
 
+import { EXTRA_FORMULAS } from './formulas-extra.js';
+
 export const CHEATSHEET_DATA = {
   Mathematics: [
     // ─── ALGEBRA ──────────────────────────────────────────────
@@ -1659,8 +1661,16 @@ export const CHEATSHEET_DATA = {
   ]
 };
 
+// Merge extra 40 high-yield formulas into each subject
+for (const subject in EXTRA_FORMULAS) {
+  if (CHEATSHEET_DATA[subject]) {
+    CHEATSHEET_DATA[subject] = [...CHEATSHEET_DATA[subject], ...EXTRA_FORMULAS[subject]];
+  }
+}
+
 export const Cheatsheet = {
   activeSubject: "Mathematics",
+  activeCategory: "All",
   searchQuery: "",
 
   renderCheatsheet(container) {
@@ -1671,17 +1681,28 @@ export const Cheatsheet = {
       <div class="cheatsheet-page-wrapper">
         <!-- Hero Header -->
         <div class="cs-hero-card">
-          <div class="cs-badge-row">
-            <span class="cs-pill">📐 High-Yield Formula Vault</span>
-            <span class="cs-pill-sec">JAMB &amp; WAEC Quick Reference (${totalFormulas}+ Core Formulas)</span>
+          <div class="cs-hero-left">
+            <div class="cs-badge-row">
+              <span class="cs-pill">📐 High-Yield Formula Vault</span>
+              <span class="cs-pill-sec">JAMB UTME &amp; WAEC WASSCE (${totalFormulas}+ Core Formulas &amp; Rules)</span>
+            </div>
+            <h1 class="cs-title">Exam Formula &amp; Rule Cheatsheet</h1>
+            <p class="cs-subtitle">
+              Comprehensive equations, laws, concord rules, accounting balance equations, and memory mnemonics condensed for rapid exam hall preparation.
+            </p>
           </div>
-          <h1 class="cs-title">Exam Formula &amp; Rule Cheatsheet</h1>
-          <p class="cs-subtitle">High-yield equations, laws, concord rules, accounting balance equations, and memory tricks condensed for rapid review.</p>
+
+          <div class="cs-hero-actions">
+            <button class="cs-action-btn cs-print-btn" id="cs-print-btn" title="Print or save as PDF for offline revision">
+              <span>🖨️ Print Cheatsheet</span>
+            </button>
+          </div>
 
           <!-- Search Bar -->
           <div class="cs-search-box">
             <span class="cs-search-icon">🔍</span>
             <input type="text" id="cs-search-input" class="cs-input" placeholder="Search formulas, laws, topics (e.g. quadratic, Snell, concord, moles, GDP, elasticity)..." value="${this.searchQuery}">
+            ${this.searchQuery ? `<button class="cs-search-clear-btn" id="cs-search-clear" title="Clear search">✕</button>` : ''}
           </div>
         </div>
 
@@ -1695,9 +1716,19 @@ export const Cheatsheet = {
           `).join('')}
         </div>
 
+        <!-- Subcategory Filter Pills -->
+        <div class="cs-subcats-bar" id="cs-subcats-container">
+          ${this.renderCategoryPills(this.activeSubject, this.activeCategory)}
+        </div>
+
+        <!-- Cheatsheet Status & Count Bar -->
+        <div class="cs-status-bar" id="cs-status-bar">
+          ${this.renderStatusBarHtml(this.activeSubject, this.activeCategory, this.searchQuery)}
+        </div>
+
         <!-- Cards Container -->
         <div class="cs-cards-grid" id="cs-cards-grid">
-          ${this.renderCardsHtml(this.activeSubject, this.searchQuery)}
+          ${this.renderCardsHtml(this.activeSubject, this.searchQuery, this.activeCategory)}
         </div>
       </div>
     `;
@@ -1706,9 +1737,52 @@ export const Cheatsheet = {
     this.attachEventListeners(container);
   },
 
-  renderCardsHtml(subject, query) {
+  renderCategoryPills(subject, activeCat) {
     const rawList = CHEATSHEET_DATA[subject] || [];
-    const filtered = rawList.filter(card => {
+    const categories = ["All", ...new Set(rawList.map(c => c.category).filter(Boolean))];
+
+    return `
+      <div class="cs-pills-scroll">
+        ${categories.map(cat => {
+          const count = cat === "All" ? rawList.length : rawList.filter(c => c.category === cat).length;
+          return `
+            <button class="cs-cat-pill ${cat === activeCat ? 'active' : ''}" data-category="${cat}">
+              <span>${cat}</span>
+              <span class="cs-pill-count">${count}</span>
+            </button>
+          `;
+        }).join('')}
+      </div>
+    `;
+  },
+
+  renderStatusBarHtml(subject, category, query) {
+    const rawList = CHEATSHEET_DATA[subject] || [];
+    const filtered = this.getFilteredCards(subject, query, category);
+
+    return `
+      <div class="cs-status-info">
+        <span class="cs-status-dot"></span>
+        <span class="cs-status-text">
+          Showing <strong>${filtered.length}</strong> of <strong>${rawList.length}</strong> formulas in <em>${subject}</em>
+          ${category !== "All" ? ` › <strong>${category}</strong>` : ''}
+          ${query ? ` (matching "<em>${query}</em>")` : ''}
+        </span>
+      </div>
+      <div class="cs-status-badge">
+        <span>⚡ Quick Study Ready</span>
+      </div>
+    `;
+  },
+
+  getFilteredCards(subject, query, category) {
+    const rawList = CHEATSHEET_DATA[subject] || [];
+    return rawList.filter(card => {
+      // Category filter
+      if (category && category !== "All" && card.category !== category) {
+        return false;
+      }
+      // Query search filter
       if (!query) return true;
       const q = query.toLowerCase();
       return (
@@ -1719,23 +1793,34 @@ export const Cheatsheet = {
         (card.tip && card.tip.toLowerCase().includes(q))
       );
     });
+  },
+
+  renderCardsHtml(subject, query, category = "All") {
+    const filtered = this.getFilteredCards(subject, query, category);
 
     if (filtered.length === 0) {
       return `
         <div class="cs-empty-state">
           <span class="cs-empty-icon">🔎</span>
-          <h3>No formula matched "${query}" in ${subject}</h3>
-          <p>Try searching for a different keyword or explore another subject tab above.</p>
+          <h3>No formula matched your filter</h3>
+          <p>No results found for "${query || category}" in ${subject}. Try clearing your search or switching categories above.</p>
+          <button class="cs-reset-btn" id="cs-reset-filters">Reset All Filters</button>
         </div>
       `;
     }
 
-    return filtered.map((card) => `
+    return filtered.map((card, idx) => `
       <div class="cs-card">
         <div class="cs-card-top">
-          <span class="cs-cat-badge">${card.category}</span>
-          <button class="cs-copy-btn" title="Copy formula" data-copy="${encodeURIComponent(card.formula)}">📋 Copy</button>
+          <div class="cs-badge-group">
+            <span class="cs-cat-badge">${card.category}</span>
+            <span class="cs-card-num">#${idx + 1}</span>
+          </div>
+          <button class="cs-copy-btn" title="Copy formula" data-copy="${encodeURIComponent(card.formula)}">
+            <span>📋 Copy</span>
+          </button>
         </div>
+
         <h3 class="cs-card-title">${card.title}</h3>
         
         <div class="cs-formula-box">
@@ -1764,28 +1849,110 @@ export const Cheatsheet = {
         tabBtns.forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
         this.activeSubject = btn.dataset.subject;
-        const grid = container.querySelector("#cs-cards-grid");
-        if (grid) {
-          grid.innerHTML = this.renderCardsHtml(this.activeSubject, this.searchQuery);
-          this.attachCopyListeners(container);
+        this.activeCategory = "All"; // Reset category on subject switch
+
+        // Re-render subcategories
+        const subcatsContainer = container.querySelector("#cs-subcats-container");
+        if (subcatsContainer) {
+          subcatsContainer.innerHTML = this.renderCategoryPills(this.activeSubject, this.activeCategory);
+          this.attachCategoryPillListeners(container);
         }
+
+        // Update status bar & grid
+        this.updateView(container);
       });
     });
+
+    // Subcategory pills listeners
+    this.attachCategoryPillListeners(container);
 
     // Search input
     const searchInput = container.querySelector("#cs-search-input");
     if (searchInput) {
       searchInput.addEventListener("input", (e) => {
         this.searchQuery = e.target.value.trim();
-        const grid = container.querySelector("#cs-cards-grid");
-        if (grid) {
-          grid.innerHTML = this.renderCardsHtml(this.activeSubject, this.searchQuery);
-          this.attachCopyListeners(container);
+        this.updateView(container);
+
+        // Toggle clear button
+        const searchBox = container.querySelector(".cs-search-box");
+        let clearBtn = container.querySelector("#cs-search-clear");
+        if (this.searchQuery) {
+          if (!clearBtn && searchBox) {
+            clearBtn = document.createElement("button");
+            clearBtn.className = "cs-search-clear-btn";
+            clearBtn.id = "cs-search-clear";
+            clearBtn.innerText = "✕";
+            clearBtn.title = "Clear search";
+            clearBtn.addEventListener("click", () => {
+              searchInput.value = "";
+              this.searchQuery = "";
+              clearBtn.remove();
+              this.updateView(container);
+            });
+            searchBox.appendChild(clearBtn);
+          }
+        } else if (clearBtn) {
+          clearBtn.remove();
         }
       });
     }
 
+    // Print button
+    const printBtn = container.querySelector("#cs-print-btn");
+    if (printBtn) {
+      printBtn.addEventListener("click", () => {
+        window.print();
+      });
+    }
+
     this.attachCopyListeners(container);
+  },
+
+  attachCategoryPillListeners(container) {
+    const pills = container.querySelectorAll(".cs-cat-pill");
+    pills.forEach(pill => {
+      pill.addEventListener("click", () => {
+        pills.forEach(p => p.classList.remove("active"));
+        pill.classList.add("active");
+        this.activeCategory = pill.dataset.category;
+        this.updateView(container);
+      });
+    });
+  },
+
+  updateView(container) {
+    const grid = container.querySelector("#cs-cards-grid");
+    const statusBar = container.querySelector("#cs-status-bar");
+
+    if (statusBar) {
+      statusBar.innerHTML = this.renderStatusBarHtml(this.activeSubject, this.activeCategory, this.searchQuery);
+    }
+
+    if (grid) {
+      grid.innerHTML = this.renderCardsHtml(this.activeSubject, this.searchQuery, this.activeCategory);
+      this.attachCopyListeners(container);
+
+      // Handle reset filter button if shown
+      const resetBtn = grid.querySelector("#cs-reset-filters");
+      if (resetBtn) {
+        resetBtn.addEventListener("click", () => {
+          this.activeCategory = "All";
+          this.searchQuery = "";
+          const searchInput = container.querySelector("#cs-search-input");
+          if (searchInput) searchInput.value = "";
+          const clearBtn = container.querySelector("#cs-search-clear");
+          if (clearBtn) clearBtn.remove();
+
+          const subcatsContainer = container.querySelector("#cs-subcats-container");
+          if (subcatsContainer) {
+            subcatsContainer.innerHTML = this.renderCategoryPills(this.activeSubject, this.activeCategory);
+            this.attachCategoryPillListeners(container);
+          }
+
+          this.updateView(container);
+        });
+      }
+    }
   },
 
   attachCopyListeners(container) {
@@ -1794,11 +1961,16 @@ export const Cheatsheet = {
       btn.addEventListener("click", () => {
         const text = decodeURIComponent(btn.dataset.copy);
         navigator.clipboard.writeText(text).then(() => {
-          const original = btn.innerText;
-          btn.innerText = "✓ Copied!";
-          setTimeout(() => { btn.innerText = original; }, 1800);
+          const original = btn.innerHTML;
+          btn.innerHTML = "<span>✓ Copied!</span>";
+          btn.classList.add("copied");
+          setTimeout(() => {
+            btn.innerHTML = original;
+            btn.classList.remove("copied");
+          }, 1800);
         }).catch(() => {});
       });
     });
   }
 };
+

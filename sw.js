@@ -3,7 +3,7 @@
  * Network-First for navigation/HTML (ensures immediate updates on release),
  * Stale-While-Revalidate for static assets, with offline fallback.
  */
-const CACHE_NAME = 'cbt-master-v14';
+const CACHE_NAME = 'cbt-master-v15';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -40,6 +40,7 @@ const ASSETS_TO_CACHE = [
   './js/daily-challenge.js',
   './js/achievements.js',
   './js/cheatsheet.js',
+  './js/formulas-extra.js',
   './js/subject-advisor.js',
   './js/question-browser.js',
   './js/analytics-view.js',
