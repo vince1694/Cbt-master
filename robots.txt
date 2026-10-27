@@ -2,12 +2,29 @@
 # Platform: JAMB UTME & WAEC WASSCE Practice Portal
 # Canonical URL: https://www.cbtmaster.guru
 
+# Explicitly allow Googlebot-Image and search crawlers to index icons & brand assets
+User-agent: Googlebot-Image
+Allow: /
+Allow: /*.png$
+Allow: /*.ico$
+Allow: /*.svg$
+
+User-agent: Googlebot
+Allow: /
+
 User-agent: *
 Allow: /
 Allow: /css/
 Allow: /js/
 Allow: /manifest.json
 Allow: /sw.js
+Allow: /favicon.ico
+Allow: /favicon.svg
+Allow: /favicon-48x48.png
+Allow: /favicon-96x96.png
+Allow: /apple-touch-icon.png
+Allow: /logo.png
+Allow: /og-banner.png
 
 # Prevent search engine crawlers from indexing private backend API endpoints
 Disallow: /api/

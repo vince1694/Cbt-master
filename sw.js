@@ -3,15 +3,19 @@
  * Network-First for navigation/HTML (ensures immediate updates on release),
  * Stale-While-Revalidate for static assets, with offline fallback.
  */
-const CACHE_NAME = 'cbt-master-v15';
+const CACHE_NAME = 'cbt-master-v16';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './favicon.ico',
   './favicon.svg',
   './favicon-48x48.png',
+  './favicon-96x96.png',
+  './apple-touch-icon.png',
   './icon-192.png',
   './icon-512.png',
+  './logo.png',
+  './og-banner.png',
   './manifest.json',
   './css/style.css',
   './css/auth.css',

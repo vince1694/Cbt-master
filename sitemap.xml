@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
@@ -7,9 +8,19 @@
   <!-- Main Homepage / CBT Practice Portal -->
   <url>
     <loc>https://www.cbtmaster.guru/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://www.cbtmaster.guru/logo.png</image:loc>
+      <image:title>CBT Master Official Logo</image:title>
+      <image:caption>Official logo for CBT Master - Nigeria's #1 JAMB UTME &amp; WAEC Practice Portal</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.cbtmaster.guru/og-banner.png</image:loc>
+      <image:title>CBT Master Portal Banner</image:title>
+      <image:caption>JAMB UTME 2025/2026 &amp; WAEC WASSCE Computer-Based Test Simulator</image:caption>
+    </image:image>
   </url>
 
   <!-- JAMB UTME 4-Subject Simulator (Science, Arts, Commercial) -->

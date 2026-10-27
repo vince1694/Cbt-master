@@ -95,11 +95,13 @@ app.use(async (req, res, next) => {
   next();
 });
 
-// Serve static frontend assets (HTML, CSS, JS, manifest, service worker)
+// Serve static frontend assets (HTML, CSS, JS, manifest, service worker, images)
 app.use(express.static(rootDir, {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.js') || filePath.endsWith('sw.js') || filePath.endsWith('.json')) {
       res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+    } else if (filePath.endsWith('.png') || filePath.endsWith('.ico') || filePath.endsWith('.svg')) {
+      res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
     }
   }
 }));
