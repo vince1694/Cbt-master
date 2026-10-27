@@ -27,7 +27,7 @@ const DEFAULT_PROFILE = {
 
 const DEFAULT_SETTINGS = {
   soundEnabled: true,
-  theme: "dark",
+  theme: "light", // Default to light mode first
   fontSize: "medium", // small, medium, large
   jambKeyShortcuts: true
 };

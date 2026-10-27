@@ -141,7 +141,13 @@ class JambWaecApp {
 
   applySettings() {
     const settings = Storage.getSettings();
-    document.documentElement.setAttribute("data-theme", settings.theme || "dark");
+    const activeTheme = settings.theme || "light";
+    document.documentElement.setAttribute("data-theme", activeTheme);
+    const themeBtn = document.getElementById("toggle-theme-btn");
+    if (themeBtn) {
+      themeBtn.textContent = activeTheme === 'light' ? '🌙' : '☀️';
+      themeBtn.title = activeTheme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode';
+    }
   }
 
   renderHeader() {
