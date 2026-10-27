@@ -104,6 +104,35 @@ export const LoginPage = ({ onNavigate, onAuthSuccess, initialEmail = '' }) => {
       {/* Right Login Form Panel */}
       <div className="auth-form-panel">
         <div className="auth-form-card">
+          {/* Mobile Brand Header */}
+          <div className="mobile-auth-brand">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'linear-gradient(135deg, #059669, #047857)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.35)' }}>
+                <IconBook size={20} />
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '1.05rem', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>CBT Master</div>
+                <div style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>JAMB &amp; WAEC Excellence</div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigate('dashboard')}
+              style={{
+                background: 'var(--surface-elevated)',
+                border: '1px solid var(--border-medium)',
+                color: 'var(--text-secondary)',
+                borderRadius: '8px',
+                padding: '6px 12px',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              Practice Free →
+            </button>
+          </div>
+
           <div className="auth-form-header">
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '20px', color: '#10b981', fontSize: '0.8rem', fontWeight: 600, marginBottom: '12px' }}>
               <IconShieldCheck size={16} />

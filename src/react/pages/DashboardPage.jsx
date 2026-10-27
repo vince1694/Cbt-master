@@ -1135,9 +1135,9 @@ export const DashboardPage = ({
                         key={idx}
                         style={{
                           display: 'flex',
-                          alignItems: 'center',
-                          gap: '12px',
-                          padding: '12px 14px',
+                          flexDirection: 'column',
+                          gap: '8px',
+                          padding: '12px',
                           borderRadius: '12px',
                           background: isCurrentUser
                             ? (theme === 'light' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(16, 185, 129, 0.1)')
@@ -1145,111 +1145,127 @@ export const DashboardPage = ({
                             ? (theme === 'light' ? 'rgba(251, 191, 36, 0.14)' : 'rgba(251, 191, 36, 0.06)')
                             : (theme === 'light' ? '#f8fafc' : 'rgba(255, 255, 255, 0.03)'),
                           border: isCurrentUser
-                            ? '1px solid #10b981'
+                            ? '1.5px solid #10b981'
                             : isTop1
-                            ? (theme === 'light' ? '1px solid #f59e0b' : '1px solid rgba(251, 191, 36, 0.3)')
+                            ? (theme === 'light' ? '1px solid #f59e0b' : '1px solid rgba(251, 191, 36, 0.35)')
                             : (theme === 'light' ? '1px solid #e2e8f0' : '1px solid rgba(255, 255, 255, 0.06)'),
-                          transition: 'transform 0.15s ease'
+                          boxShadow: isTop1 && theme === 'light' ? '0 2px 8px rgba(245, 158, 11, 0.08)' : 'none'
                         }}
                       >
-                        {/* Rank Badge */}
-                        <div style={{
-                          minWidth: '40px',
-                          textAlign: 'center',
-                          fontWeight: 900,
-                          fontSize: isTop1 || isTop2 || isTop3 ? '1.25rem' : '0.92rem',
-                          color: isTop1 ? '#d97706' : isTop2 ? (theme === 'light' ? '#64748b' : '#cbd5e1') : isTop3 ? '#ea580c' : (theme === 'light' ? '#94a3b8' : '#64748b')
-                        }}>
-                          {isTop1 ? '🥇' : isTop2 ? '🥈' : isTop3 ? '🥉' : `#${rankNum}`}
+                        {/* Top Row: Rank + Avatar + Name/Track + Score/Badge */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', width: '100%' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+                            {/* Rank Badge */}
+                            <div style={{
+                              minWidth: '26px',
+                              textAlign: 'center',
+                              fontWeight: 900,
+                              fontSize: isTop1 || isTop2 || isTop3 ? '1.2rem' : '0.88rem',
+                              color: isTop1 ? '#d97706' : isTop2 ? (theme === 'light' ? '#64748b' : '#cbd5e1') : isTop3 ? '#ea580c' : (theme === 'light' ? '#94a3b8' : '#64748b'),
+                              flexShrink: 0
+                            }}>
+                              {isTop1 ? '🥇' : isTop2 ? '🥈' : isTop3 ? '🥉' : `#${rankNum}`}
+                            </div>
+
+                            {/* Candidate Avatar */}
+                            <div style={{
+                              width: '36px',
+                              height: '36px',
+                              borderRadius: '50%',
+                              background: avatarBg,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 800,
+                              fontSize: '0.82rem',
+                              color: '#ffffff',
+                              flexShrink: 0,
+                              boxShadow: isTop1 ? '0 0 8px rgba(251, 191, 36, 0.35)' : 'none'
+                            }}>
+                              {initials}
+                            </div>
+
+                            {/* Candidate Name & Track */}
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                <span style={{ fontWeight: 700, color: theme === 'light' ? '#0f172a' : '#f8fafc', fontSize: '0.92rem', lineHeight: 1.2 }}>
+                                  {entry.name || 'Scholar Candidate'}
+                                </span>
+                                {isCurrentUser && (
+                                  <span style={{
+                                    background: '#10b981',
+                                    color: '#022c22',
+                                    fontSize: '0.62rem',
+                                    fontWeight: 800,
+                                    padding: '1px 5px',
+                                    borderRadius: '4px',
+                                    letterSpacing: '0.04em'
+                                  }}>
+                                    YOU
+                                  </span>
+                                )}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '3px' }}>
+                                <span style={{
+                                  fontSize: '0.68rem',
+                                  color: entry.department === 'Science' ? '#0284c7' : entry.department === 'Arts' ? '#9333ea' : '#d97706',
+                                  background: theme === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)',
+                                  padding: '1px 6px',
+                                  borderRadius: '4px',
+                                  fontWeight: 700
+                                }}>
+                                  {entry.department || 'Science'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* JAMB UTME Score & Status Badge */}
+                          <div style={{ textAlign: 'right', flexShrink: 0, paddingLeft: '4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: '2px' }}>
+                              <span style={{ fontSize: '1.18rem', fontWeight: 900, color: theme === 'light' ? '#059669' : '#10b981', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                                {score}
+                              </span>
+                              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b' }}>
+                                / 400
+                              </span>
+                            </div>
+                            <div style={{
+                              display: 'inline-block',
+                              marginTop: '2px',
+                              padding: '1px 6px',
+                              borderRadius: '8px',
+                              fontSize: '0.64rem',
+                              fontWeight: 700,
+                              background: compBadge.bg,
+                              color: compBadge.color,
+                              border: `1px solid ${compBadge.border}`
+                            }}>
+                              {compBadge.text}
+                            </div>
+                          </div>
                         </div>
 
-                        {/* Candidate Avatar */}
+                        {/* Bottom Row: Aspirations & Activities Action */}
                         <div style={{
-                          width: '42px',
-                          height: '42px',
-                          borderRadius: '50%',
-                          background: avatarBg,
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          fontWeight: 800,
-                          fontSize: '0.88rem',
-                          color: '#ffffff',
-                          flexShrink: 0,
-                          boxShadow: isTop1 ? '0 0 10px rgba(251, 191, 36, 0.35)' : 'none'
+                          justifyContent: 'space-between',
+                          gap: '8px',
+                          paddingTop: '6px',
+                          borderTop: theme === 'light' ? '1px solid #eef2f6' : '1px solid rgba(255, 255, 255, 0.05)'
                         }}>
-                          {initials}
-                        </div>
-
-                        {/* Candidate Details */}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                            <span style={{ fontWeight: 700, color: theme === 'light' ? '#0f172a' : '#f8fafc', fontSize: '0.95rem' }}>
-                              {entry.name || 'Scholar Candidate'}
-                            </span>
-                            {isCurrentUser && (
-                              <span style={{
-                                background: '#10b981',
-                                color: '#022c22',
-                                fontSize: '0.65rem',
-                                fontWeight: 800,
-                                padding: '2px 6px',
-                                borderRadius: '4px',
-                                letterSpacing: '0.04em'
-                              }}>
-                                YOU
-                              </span>
-                            )}
-                            <span style={{
-                              fontSize: '0.7rem',
-                              color: entry.department === 'Science' ? '#0284c7' : entry.department === 'Arts' ? '#9333ea' : '#d97706',
-                              background: theme === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)',
-                              padding: '2px 6px',
-                              borderRadius: '4px',
-                              fontWeight: 600
-                            }}>
-                              {entry.department || 'Science'}
-                            </span>
-                          </div>
                           <div style={{
-                            fontSize: '0.76rem',
+                            fontSize: '0.74rem',
                             color: theme === 'light' ? '#64748b' : '#94a3b8',
-                            marginTop: '2px',
-                            whiteSpace: 'nowrap',
                             overflow: 'hidden',
-                            textOverflow: 'ellipsis'
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            minWidth: 0,
+                            flex: 1
                           }}>
-                            {entry.course || 'Degree Candidate'} • {entry.institution || 'University Aspirant'}
+                            🎓 {entry.course || 'Degree Candidate'} • {entry.institution || 'University Aspirant'}
                           </div>
-                        </div>
-
-                        {/* JAMB UTME Score & Status */}
-                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: '3px' }}>
-                            <span style={{ fontSize: '1.25rem', fontWeight: 900, color: theme === 'light' ? '#059669' : '#10b981', letterSpacing: '-0.02em' }}>
-                              {score}
-                            </span>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>
-                              / 400
-                            </span>
-                          </div>
-                          <div style={{
-                            display: 'inline-block',
-                            marginTop: '2px',
-                            padding: '2px 8px',
-                            borderRadius: '10px',
-                            fontSize: '0.68rem',
-                            fontWeight: 700,
-                            background: compBadge.bg,
-                            color: compBadge.color,
-                            border: `1px solid ${compBadge.border}`
-                          }}>
-                            {compBadge.text}
-                          </div>
-                        </div>
-
-                        {/* Inspect Candidate Activities */}
-                        <div style={{ flexShrink: 0 }}>
                           <button
                             type="button"
                             onClick={() => handleInspectCandidate(entry.candidateId || entry.name)}
@@ -1258,19 +1274,19 @@ export const DashboardPage = ({
                               background: theme === 'light' ? '#ecfdf5' : 'rgba(16, 185, 129, 0.12)',
                               color: theme === 'light' ? '#047857' : '#10b981',
                               border: theme === 'light' ? '1px solid #a7f3d0' : '1px solid rgba(16, 185, 129, 0.3)',
-                              borderRadius: '8px',
-                              padding: '6px 10px',
-                              fontSize: '0.78rem',
+                              borderRadius: '6px',
+                              padding: '4px 10px',
+                              fontSize: '0.74rem',
                               fontWeight: 700,
                               cursor: 'pointer',
                               display: 'inline-flex',
                               alignItems: 'center',
-                              gap: '4px',
-                              transition: 'all 0.15s'
+                              gap: '3px',
+                              flexShrink: 0
                             }}
                           >
                             <span>Activities</span>
-                            <span style={{ fontSize: '0.85rem' }}>↗</span>
+                            <span style={{ fontSize: '0.82rem' }}>↗</span>
                           </button>
                         </div>
                       </div>
@@ -1286,16 +1302,18 @@ export const DashboardPage = ({
               paddingTop: '1rem',
               borderTop: theme === 'light' ? '1px solid #e2e8f0' : '1px solid rgba(255, 255, 255, 0.08)',
               display: 'flex',
+              flexWrap: 'wrap',
+              gap: '10px',
               justifyContent: 'space-between',
               alignItems: 'center'
             }}>
-              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+              <span style={{ fontSize: '0.75rem', color: '#64748b', flex: '1 1 200px' }}>
                 💡 Rankings update automatically as students complete exams.
               </span>
               <button
                 onClick={() => setShowLeaderboard(false)}
                 style={{
-                  padding: '9px 20px',
+                  padding: '9px 22px',
                   borderRadius: '10px',
                   background: '#10b981',
                   color: '#022c22',
@@ -1304,7 +1322,9 @@ export const DashboardPage = ({
                   fontSize: '0.88rem',
                   cursor: 'pointer',
                   boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
-                  transition: 'all 0.15s'
+                  transition: 'all 0.15s',
+                  flex: '0 0 auto',
+                  minWidth: '130px'
                 }}
               >
                 Close Leaderboard
@@ -1327,94 +1347,110 @@ export const DashboardPage = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 1000
+          zIndex: 1000,
+          padding: '1rem'
         }}>
           <div style={{
             background: theme === 'light' ? '#ffffff' : '#0f172a',
             border: theme === 'light' ? '1px solid #e2e8f0' : '1px solid rgba(255, 255, 255, 0.15)',
             borderRadius: '20px',
-            padding: '2rem',
+            padding: 'clamp(1rem, 3vw, 1.75rem)',
             maxWidth: '680px',
-            width: '92%',
+            width: '100%',
             maxHeight: '90vh',
             display: 'flex',
             flexDirection: 'column',
             boxShadow: theme === 'light' ? '0 20px 50px rgba(0,0,0,0.15)' : '0 20px 50px rgba(0,0,0,0.6)'
           }}>
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', borderBottom: theme === 'light' ? '1px solid #e2e8f0' : '1px solid rgba(255,255,255,0.08)', paddingBottom: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', marginBottom: '1.25rem', borderBottom: theme === 'light' ? '1px solid #e2e8f0' : '1px solid rgba(255,255,255,0.08)', paddingBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
                 <div style={{
-                  width: '56px',
-                  height: '56px',
+                  width: '48px',
+                  height: '48px',
                   borderRadius: '50%',
                   background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: '#fff',
-                  fontSize: '1.5rem',
+                  fontSize: '1.35rem',
                   fontWeight: 800,
-                  boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)'
+                  boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)',
+                  flexShrink: 0
                 }}>
                   {inspectingCandidate.name ? inspectingCandidate.name.charAt(0).toUpperCase() : 'C'}
                 </div>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: theme === 'light' ? '#0f172a' : '#fff', margin: 0 }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: theme === 'light' ? '#0f172a' : '#fff', margin: 0, lineHeight: 1.2 }}>
                       {inspectingCandidate.name}
                     </h3>
                     <span style={{
-                      padding: '3px 8px',
+                      padding: '2px 8px',
                       borderRadius: '12px',
-                      fontSize: '0.75rem',
+                      fontSize: '0.72rem',
                       fontWeight: 700,
                       background: theme === 'light' ? '#dcfce7' : 'rgba(16, 185, 129, 0.2)',
                       color: theme === 'light' ? '#15803d' : '#10b981',
-                      border: theme === 'light' ? '1px solid #bbf7d0' : '1px solid rgba(16, 185, 129, 0.4)'
+                      border: theme === 'light' ? '1px solid #bbf7d0' : '1px solid rgba(16, 185, 129, 0.4)',
+                      flexShrink: 0
                     }}>
                       {inspectingCandidate.department || 'Science'} Track
                     </span>
                   </div>
-                  <p style={{ margin: '4px 0 0', color: theme === 'light' ? '#64748b' : '#94a3b8', fontSize: '0.88rem' }}>
+                  <p style={{ margin: '4px 0 0', color: theme === 'light' ? '#64748b' : '#94a3b8', fontSize: '0.82rem', lineHeight: 1.4 }}>
                     Aspiring for <strong style={{ color: theme === 'light' ? '#0f172a' : '#fff' }}>{inspectingCandidate.preferredCourse || 'Undergraduate Course'}</strong> at <strong style={{ color: theme === 'light' ? '#0f172a' : '#fff' }}>{inspectingCandidate.targetInstitution || 'Target University'}</strong>
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setInspectingCandidate(null)}
-                style={{ background: 'none', border: 'none', color: theme === 'light' ? '#64748b' : '#94a3b8', fontSize: '1.4rem', cursor: 'pointer' }}
+                style={{
+                  background: theme === 'light' ? '#f1f5f9' : 'rgba(255, 255, 255, 0.08)',
+                  border: theme === 'light' ? '1px solid #e2e8f0' : '1px solid rgba(255, 255, 255, 0.1)',
+                  color: theme === 'light' ? '#475569' : '#94a3b8',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  flexShrink: 0
+                }}
               >
                 ✕
               </button>
             </div>
 
-            {/* Performance Overview Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '1.5rem' }}>
-              <div style={{ background: theme === 'light' ? '#f8fafc' : '#1e293b', padding: '12px', borderRadius: '12px', textAlign: 'center', border: theme === 'light' ? '1px solid #e2e8f0' : '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ color: theme === 'light' ? '#64748b' : '#94a3b8', fontSize: '0.75rem', fontWeight: 600 }}>Target UTME</div>
-                <div style={{ color: '#0284c7', fontSize: '1.25rem', fontWeight: 800, marginTop: '4px' }}>
+            {/* Performance Overview Cards - Responsive 2x2 on Mobile, 4x1 on Tablet/Desktop */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(125px, 1fr))', gap: '8px', marginBottom: '1.25rem' }}>
+              <div style={{ background: theme === 'light' ? '#f8fafc' : '#1e293b', padding: '10px 12px', borderRadius: '12px', textAlign: 'center', border: theme === 'light' ? '1px solid #e2e8f0' : '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ color: theme === 'light' ? '#64748b' : '#94a3b8', fontSize: '0.72rem', fontWeight: 600 }}>Target UTME</div>
+                <div style={{ color: '#0284c7', fontSize: '1.15rem', fontWeight: 800, marginTop: '3px', whiteSpace: 'nowrap' }}>
                   {inspectingCandidate.targetJambScore || 280} / 400
                 </div>
               </div>
 
-              <div style={{ background: theme === 'light' ? '#f8fafc' : '#1e293b', padding: '12px', borderRadius: '12px', textAlign: 'center', border: theme === 'light' ? '1px solid #e2e8f0' : '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ color: theme === 'light' ? '#64748b' : '#94a3b8', fontSize: '0.75rem', fontWeight: 600 }}>Best Score</div>
-                <div style={{ color: theme === 'light' ? '#059669' : '#10b981', fontSize: '1.25rem', fontWeight: 800, marginTop: '4px' }}>
+              <div style={{ background: theme === 'light' ? '#f8fafc' : '#1e293b', padding: '10px 12px', borderRadius: '12px', textAlign: 'center', border: theme === 'light' ? '1px solid #e2e8f0' : '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ color: theme === 'light' ? '#64748b' : '#94a3b8', fontSize: '0.72rem', fontWeight: 600 }}>Best Score</div>
+                <div style={{ color: theme === 'light' ? '#059669' : '#10b981', fontSize: '1.15rem', fontWeight: 800, marginTop: '3px', whiteSpace: 'nowrap' }}>
                   {inspectingCandidate.bestScaledJambScore || Math.round(((inspectingCandidate.highestScore || 0)/100)*400)} / 400
                 </div>
               </div>
 
-              <div style={{ background: theme === 'light' ? '#f8fafc' : '#1e293b', padding: '12px', borderRadius: '12px', textAlign: 'center', border: theme === 'light' ? '1px solid #e2e8f0' : '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ color: theme === 'light' ? '#64748b' : '#94a3b8', fontSize: '0.75rem', fontWeight: 600 }}>Average %</div>
-                <div style={{ color: '#d97706', fontSize: '1.25rem', fontWeight: 800, marginTop: '4px' }}>
+              <div style={{ background: theme === 'light' ? '#f8fafc' : '#1e293b', padding: '10px 12px', borderRadius: '12px', textAlign: 'center', border: theme === 'light' ? '1px solid #e2e8f0' : '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ color: theme === 'light' ? '#64748b' : '#94a3b8', fontSize: '0.72rem', fontWeight: 600 }}>Average %</div>
+                <div style={{ color: '#d97706', fontSize: '1.15rem', fontWeight: 800, marginTop: '3px' }}>
                   {inspectingCandidate.averagePercentage || 0}%
                 </div>
               </div>
 
-              <div style={{ background: theme === 'light' ? '#f8fafc' : '#1e293b', padding: '12px', borderRadius: '12px', textAlign: 'center', border: theme === 'light' ? '1px solid #e2e8f0' : '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ color: theme === 'light' ? '#64748b' : '#94a3b8', fontSize: '0.75rem', fontWeight: 600 }}>Tests Taken</div>
-                <div style={{ color: '#9333ea', fontSize: '1.25rem', fontWeight: 800, marginTop: '4px' }}>
+              <div style={{ background: theme === 'light' ? '#f8fafc' : '#1e293b', padding: '10px 12px', borderRadius: '12px', textAlign: 'center', border: theme === 'light' ? '1px solid #e2e8f0' : '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ color: theme === 'light' ? '#64748b' : '#94a3b8', fontSize: '0.72rem', fontWeight: 600 }}>Tests Taken</div>
+                <div style={{ color: '#9333ea', fontSize: '1.15rem', fontWeight: 800, marginTop: '3px' }}>
                   {inspectingCandidate.totalTestsTaken || 0}
                 </div>
               </div>
@@ -1422,10 +1458,10 @@ export const DashboardPage = ({
 
             {/* Activities List */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <h4 style={{ margin: 0, color: theme === 'light' ? '#0f172a' : '#fff', fontSize: '0.95rem', fontWeight: 700 }}>
+              <h4 style={{ margin: 0, color: theme === 'light' ? '#0f172a' : '#fff', fontSize: '0.92rem', fontWeight: 700 }}>
                 📋 Record of Test Activities
               </h4>
-              <span style={{ color: '#64748b', fontSize: '0.8rem' }}>
+              <span style={{ color: '#64748b', fontSize: '0.75rem' }}>
                 {inspectingCandidate.recentActivities?.length || 0} session(s) recorded
               </span>
             </div>
@@ -1441,38 +1477,44 @@ export const DashboardPage = ({
                   No published test activity records found for this candidate yet.
                 </p>
               ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
-                  <thead>
-                    <tr style={{ color: theme === 'light' ? '#475569' : '#94a3b8', borderBottom: theme === 'light' ? '1px solid #e2e8f0' : '1px solid rgba(255, 255, 255, 0.08)' }}>
-                      <th style={{ padding: '8px', textAlign: 'left' }}>Date</th>
-                      <th style={{ padding: '8px', textAlign: 'left' }}>Exam / Simulation</th>
-                      <th style={{ padding: '8px', textAlign: 'left' }}>Track</th>
-                      <th style={{ padding: '8px', textAlign: 'right' }}>Score</th>
-                      <th style={{ padding: '8px', textAlign: 'right' }}>UTME Scale</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {inspectingCandidate.recentActivities.map((act, i) => (
-                      <tr key={i} style={{ borderBottom: theme === 'light' ? '1px solid #f1f5f9' : '1px solid rgba(255, 255, 255, 0.04)' }}>
-                        <td style={{ padding: '8px', color: '#64748b' }}>
-                          {act.date ? new Date(act.date).toLocaleDateString() : 'Recent'}
-                        </td>
-                        <td style={{ padding: '8px', color: theme === 'light' ? '#0f172a' : '#fff', fontWeight: 600 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {inspectingCandidate.recentActivities.map((act, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: '10px',
+                        background: theme === 'light' ? '#f8fafc' : 'rgba(255, 255, 255, 0.04)',
+                        border: theme === 'light' ? '1px solid #e2e8f0' : '1px solid rgba(255, 255, 255, 0.05)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '10px'
+                      }}
+                    >
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.88rem', color: theme === 'light' ? '#0f172a' : '#fff', lineHeight: 1.3 }}>
                           {act.examTitle || act.examType || 'Practice Session'}
-                        </td>
-                        <td style={{ padding: '8px', color: theme === 'light' ? '#475569' : '#94a3b8' }}>
-                          {act.department || 'Science'}
-                        </td>
-                        <td style={{ padding: '8px', textAlign: 'right', color: theme === 'light' ? '#334155' : '#cbd5e1' }}>
-                          {act.score} / {act.totalQuestions} ({Math.round(act.percentage)}%)
-                        </td>
-                        <td style={{ padding: '8px', textAlign: 'right', color: theme === 'light' ? '#059669' : '#10b981', fontWeight: 800 }}>
-                          {act.scaledJambScore} / 400
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                        <div style={{ fontSize: '0.74rem', color: theme === 'light' ? '#64748b' : '#94a3b8', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <span>📅 {act.date ? new Date(act.date).toLocaleDateString() : 'Recent'}</span>
+                          <span>•</span>
+                          <span style={{ color: '#0284c7', fontWeight: 600 }}>{act.department || 'Science'}</span>
+                          <span>•</span>
+                          <span>Raw: {act.score}/{act.totalQuestions} ({Math.round(act.percentage)}%)</span>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <div style={{ fontSize: '1.15rem', fontWeight: 900, color: theme === 'light' ? '#059669' : '#10b981', lineHeight: 1 }}>
+                          {act.scaledJambScore}
+                        </div>
+                        <div style={{ fontSize: '0.66rem', fontWeight: 700, color: '#64748b', marginTop: '2px' }}>
+                          / 400 UTME
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 
@@ -1482,7 +1524,7 @@ export const DashboardPage = ({
                 type="button"
                 onClick={() => setInspectingCandidate(null)}
                 style={{
-                  padding: '9px 18px',
+                  padding: '9px 20px',
                   borderRadius: '10px',
                   background: theme === 'light' ? '#0f172a' : '#334155',
                   color: '#fff',

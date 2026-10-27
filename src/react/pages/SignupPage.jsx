@@ -127,6 +127,35 @@ export const SignupPage = ({ onNavigate }) => {
       {/* Right Form Panel */}
       <div className="auth-form-panel">
         <div className="auth-form-card" style={{ maxWidth: '520px' }}>
+          {/* Mobile Brand Header */}
+          <div className="mobile-auth-brand">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'linear-gradient(135deg, #059669, #047857)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.35)' }}>
+                <IconBook size={20} />
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '1.05rem', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>CBT Master</div>
+                <div style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>JAMB &amp; WAEC Excellence</div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigate('dashboard')}
+              style={{
+                background: 'var(--surface-elevated)',
+                border: '1px solid var(--border-medium)',
+                color: 'var(--text-secondary)',
+                borderRadius: '8px',
+                padding: '6px 12px',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              Practice Free →
+            </button>
+          </div>
+
           <div className="auth-form-header">
             <h1 className="auth-form-title">Create Candidate Account</h1>
             <p className="auth-form-sub">Sign up with your study preferences to unlock your candidate dashboard</p>
@@ -201,23 +230,24 @@ export const SignupPage = ({ onNavigate }) => {
             {/* Department Selection Cards */}
             <div className="auth-field-group">
               <label>Academic Track</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginTop: '6px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '4px' }}>
                 <button
                   type="button"
                   onClick={() => setDepartment('Science')}
                   style={{
-                    padding: '12px 8px',
-                    borderRadius: '10px',
-                    background: department === 'Science' ? 'rgba(16, 185, 129, 0.18)' : 'rgba(255, 255, 255, 0.04)',
-                    border: department === 'Science' ? '2px solid #10b981' : '1px solid rgba(255, 255, 255, 0.1)',
-                    color: department === 'Science' ? '#10b981' : '#cbd5e1',
+                    padding: '12px 6px',
+                    borderRadius: '12px',
+                    background: department === 'Science' ? 'rgba(16, 185, 129, 0.15)' : 'var(--surface-elevated)',
+                    border: department === 'Science' ? '2px solid #10b981' : '1px solid var(--border-medium)',
+                    color: department === 'Science' ? '#10b981' : 'var(--text-secondary)',
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     gap: '6px',
-                    fontWeight: 600,
-                    fontSize: '0.85rem'
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    transition: 'all 0.15s ease'
                   }}
                 >
                   <IconMicroscope size={22} />
@@ -228,18 +258,19 @@ export const SignupPage = ({ onNavigate }) => {
                   type="button"
                   onClick={() => setDepartment('Arts')}
                   style={{
-                    padding: '12px 8px',
-                    borderRadius: '10px',
-                    background: department === 'Arts' ? 'rgba(168, 85, 247, 0.18)' : 'rgba(255, 255, 255, 0.04)',
-                    border: department === 'Arts' ? '2px solid #a855f7' : '1px solid rgba(255, 255, 255, 0.1)',
-                    color: department === 'Arts' ? '#c084fc' : '#cbd5e1',
+                    padding: '12px 6px',
+                    borderRadius: '12px',
+                    background: department === 'Arts' ? 'rgba(168, 85, 247, 0.15)' : 'var(--surface-elevated)',
+                    border: department === 'Arts' ? '2px solid #a855f7' : '1px solid var(--border-medium)',
+                    color: department === 'Arts' ? '#a855f7' : 'var(--text-secondary)',
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     gap: '6px',
-                    fontWeight: 600,
-                    fontSize: '0.85rem'
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    transition: 'all 0.15s ease'
                   }}
                 >
                   <IconScale size={22} />
@@ -250,18 +281,19 @@ export const SignupPage = ({ onNavigate }) => {
                   type="button"
                   onClick={() => setDepartment('Commercial')}
                   style={{
-                    padding: '12px 8px',
-                    borderRadius: '10px',
-                    background: department === 'Commercial' ? 'rgba(59, 130, 246, 0.18)' : 'rgba(255, 255, 255, 0.04)',
-                    border: department === 'Commercial' ? '2px solid #3b82f6' : '1px solid rgba(255, 255, 255, 0.1)',
-                    color: department === 'Commercial' ? '#60a5fa' : '#cbd5e1',
+                    padding: '12px 6px',
+                    borderRadius: '12px',
+                    background: department === 'Commercial' ? 'rgba(59, 130, 246, 0.15)' : 'var(--surface-elevated)',
+                    border: department === 'Commercial' ? '2px solid #3b82f6' : '1px solid var(--border-medium)',
+                    color: department === 'Commercial' ? '#3b82f6' : 'var(--text-secondary)',
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     gap: '6px',
-                    fontWeight: 600,
-                    fontSize: '0.85rem'
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    transition: 'all 0.15s ease'
                   }}
                 >
                   <IconBriefcase size={22} />
@@ -272,9 +304,14 @@ export const SignupPage = ({ onNavigate }) => {
 
             {/* Target Score Slider */}
             <div className="auth-field-group">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                 <label htmlFor="react-target-score">Target JAMB UTME Score</label>
-                <span style={{ color: '#10b981', fontWeight: 800, fontSize: '0.95rem' }}>{targetScore} / 400</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: targetScore >= 300 ? '#a855f7' : targetScore >= 250 ? '#10b981' : '#0284c7' }}>
+                    {targetScore >= 300 ? '🏆 Elite' : targetScore >= 250 ? '🌟 Competitive' : '✅ Standard Pass'}
+                  </span>
+                  <span style={{ color: '#10b981', fontWeight: 800, fontSize: '0.95rem' }}>{targetScore} / 400</span>
+                </div>
               </div>
               <input
                 id="react-target-score"
@@ -288,8 +325,8 @@ export const SignupPage = ({ onNavigate }) => {
               />
             </div>
 
-            {/* Target University & Course */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            {/* Target University & Course - Responsive Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '12px' }}>
               <div className="auth-field-group">
                 <label htmlFor="react-institution">Target University</label>
                 <select

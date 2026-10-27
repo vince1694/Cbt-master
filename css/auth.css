@@ -424,25 +424,45 @@
   color: #059669;
 }
 
+/* ─── Mobile Brand Header ────────────────────────────────────────────── */
+.mobile-auth-brand {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
 /* ─── Mobile Responsive ──────────────────────────────────────────────── */
 @media (max-width: 860px) {
   .auth-page {
     grid-template-columns: 1fr;
+    background: var(--canvas-bg);
   }
 
   .auth-hero-panel {
     display: none;
   }
 
+  .mobile-auth-brand {
+    display: flex;
+  }
+
   .auth-form-panel {
     min-height: 100vh;
-    padding: 2rem 1.25rem;
+    padding: 1.75rem 1.25rem;
     align-items: flex-start;
-    padding-top: 2.5rem;
+    padding-top: 2rem;
   }
 
   .auth-form-card {
     max-width: 100%;
+    background: var(--surface-base);
+    border: 1px solid var(--border-subtle);
+    padding: 1.5rem;
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
   }
 }
 
@@ -452,11 +472,16 @@
   }
 
   .auth-form-title {
-    font-size: 1.6rem;
+    font-size: 1.5rem;
   }
 
   .auth-form-panel {
-    padding: 1.5rem 1rem;
+    padding: 1.25rem 0.85rem;
+  }
+
+  .auth-form-card {
+    padding: 1.25rem 1rem;
+    border-radius: 16px;
   }
 }
 
